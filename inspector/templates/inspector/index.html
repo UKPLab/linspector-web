@@ -1,0 +1,59 @@
+{% extends 'inspector/base.html' %}
+
+{% block content %}
+<div class="content px-5">
+  <div class="row text-center">
+    <div class="col-12 mb-5">
+      <a class="btn btn-primary" href="/language/">Getting Started</a>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-sm-4 mb-4">
+      <div class="card bg-light">
+        <h5 class="card-header text-center">File Types</h5>
+        <div class="card-body">
+          <p class="card-text">Some text.</p>
+        </div>
+        <ul class="list-group list-group-flush text-left">
+          <li class="list-group-item">AllenNLP Archive <code>.tar.gz</code></li>
+          <li class="list-group-item">Word Embeddings <code>.vec</code></li>
+        </ul>
+      </div>
+    </div>
+    <div class="col-sm-4 mb-4">
+      <div class="card bg-light">
+        <h5 class="card-header text-center">Languages</h5>
+        <div class="card-body">
+          <p class="card-text">Some text.</p>
+        </div>
+        <ul class="list-group list-group-flush text-left">
+        {% if languages %}
+        {% for language in languages %}
+          <li class="list-group-item">{{ language.name }}</li>
+        {% endfor %}
+        {% else %}
+          <li class="list-group-item">No languages available.</li>
+        {% endif %}
+        </ul>
+      </div>
+    </div>
+    <div class="col-sm-4 mb-4">
+      <div class="card bg-light">
+        <h5 class="card-header text-center">Probing Tasks</h5>
+        <div class="card-body">
+          <p class="card-text">Some text.</p>
+        </div>
+        <ul class="list-group list-group-flush text-left">
+        {% if probing_tasks %}
+        {% for probing_task in probing_tasks %}
+          <li class="list-group-item">{{ probing_task.name }}</li>
+        {% endfor %}
+        {% else %}
+          <li class="list-group-item">No probing tasks available.</li>
+        {% endif %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

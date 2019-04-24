@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>{% block title %}LINSPECTOR{% endblock %}</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+  {% comment 'Use static resources in production instead of CDN' %}
+  {% load static %}
+  <link rel="stylesheet" type="text/css" href="{% static 'inspector/bootstrap/css/bootstrap.min.css' %}">
+  <link rel="stylesheet" type="text/css" href="{% static 'inspector/bootstrap/css/bootstrap-grid.min.css' %}">
+  {% endcomment %}
+</head>
+<body>
+  <header class="my-4">
+    {% block header %}
+    <div class="container">
+      <div class="row text-center">
+        <div class="col-12">
+          <h1>LINSPECTOR</h1>
+        </div>
+      </div>
+    </div>
+    {% endblock %}
+  </header>
+  <section id="content" class="my-4">
+    {% block content %}{% endblock %}
+  </section>
+  <footer>
+    {% block footer %}
+    {% endblock %}
+  </footer>
+</body>
+</html>

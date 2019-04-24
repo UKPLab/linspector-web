@@ -123,4 +123,5 @@ dmypy.json
 .pyre/
 
 linspectorenv/
+inspector/static/
 .DS_Store
