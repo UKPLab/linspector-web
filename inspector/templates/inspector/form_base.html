@@ -14,7 +14,7 @@
   {% for error in field.errors %}
   <div class="row justify-content-sm-center">
     <div class="col-sm-6 col-md-4">
-      <div class="alert alert-danger" role="alert">{{ field.label_tag }} - {{ error }}</div>
+      <div class="alert alert-danger" role="alert">{{ field.label }} - {{ error }}</div>
     </div>
   </div>
   {% endfor %}
