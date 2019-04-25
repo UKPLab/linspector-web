@@ -3,6 +3,7 @@ from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 
 from .forms import SelectLanguageForm, SelectLayerForm, SelectProbingTaskForm, UploadModelForm
+from .linspector import get_modules, load_model
 from .models import Language, Model, ProbingTask
 from .util import get_request_params
 
@@ -103,6 +104,13 @@ class SelectLayerView(FormView):
             raise SuspiciousOperation('`model` parameter is missing.')
         else:
             self._language, self._probing_tasks, self._model = get_request_params(request)
+
+    def get_form_kwargs(self):
+        # Override method to pass language parameter to SelectLayerForm init
+        kwargs = super(FormView, self).get_form_kwargs()
+        model = load_model(self._model.id)
+        kwargs['layer'] = get_modules(model)
+        return kwargs
 
     def get_success_url(self):
         return '/language/probing-task/model/layer/probe/?lang={}&task={}&model={}&layer={}'.format(self._language.code, ','.join([str(task.id) for task in self._probing_tasks]), self._model.id, self.request.POST['layer'])

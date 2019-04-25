@@ -19,4 +19,7 @@ class UploadModelForm(Form):
 
 class SelectLayerForm(Form):
 
-    layer = ChoiceField(choices=[('', '---------')], required=True, label='Layer', label_suffix='', widget=Select(attrs={'class': 'custom-select'}))
+    def __init__(self, layer, *args, **kwargs):
+        # Override method to add layer choices
+        super().__init__(*args, **kwargs)
+        self.fields['layer'] = ChoiceField(choices=[('', '---------')] + layer, required=True, label='Layer', label_suffix='', widget=Select(attrs={'class': 'custom-select'}))
