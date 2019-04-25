@@ -1,0 +1,23 @@
+{% extends 'inspector/form_base.html' %}
+
+{% block form %}
+<h5 class="card-header text-center">Select Layer</h5>
+<div class="card-body">
+  <form method="post">{% csrf_token %}
+    <div class="form-row">
+      <div class="form-group col-12">
+        {{ form.layer }}
+      </div>
+    </div>
+    <p class="card-text">Some text.</p>
+    <div class="row align-items-center">
+      <div class="col-6 text-left">
+        <a class="card-link" href="../">Back</a>
+      </div>
+      <div class="col-6 text-right">
+        <button type="submit" class="btn btn-primary">Probe</button>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

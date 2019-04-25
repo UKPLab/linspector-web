@@ -1,0 +1,27 @@
+{% extends 'inspector/form_base.html' %}
+
+{% block form %}
+<h5 class="card-header text-center">Upload Model</h5>
+<div class="card-body">
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    <div class="form-row">
+      <div class="form-group col-12">
+        <div class="custom-file">
+          <input type="file" name="{{ form.model.name }}" class="custom-file-input" id="{{ form.model.auto_id }}" accept=".gz,.vec">
+          <label class="custom-file-label" for="{{ form.model.auto_id }}">Choose Model</label>
+          <small class="form-text text-muted"><code>.tar.gz</code> or <code>.vec</code></small>
+        </div>
+      </div>
+    </div>
+    <p class="card-text">Some text.</p>
+    <div class="row align-items-center">
+      <div class="col-6 text-left">
+        <a class="card-link" href="../">Back</a>
+      </div>
+      <div class="col-6 text-right">
+        <button type="submit" class="btn btn-primary">Next</button>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}
