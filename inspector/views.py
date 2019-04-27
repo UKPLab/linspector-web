@@ -1,9 +1,10 @@
 from django.core.exceptions import SuspiciousOperation
+from django.core.files.storage import FileSystemStorage
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 
 from .forms import SelectLanguageForm, SelectLayerForm, SelectProbingTaskForm, UploadModelForm
-from .linspector import get_modules, load_model
+from .linspector import get_embeddings_from_model, get_modules, load_model, probe
 from .models import Language, Model, ProbingTask
 from .utils import get_request_params
 
@@ -28,7 +29,7 @@ class SelectLanguageView(FormView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update(now=1, min=0, max=4)
+        context.update(now=0, min=0, max=4)
         return context
 
 class SelectProbingTaskView(FormView):
@@ -54,7 +55,7 @@ class SelectProbingTaskView(FormView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update(now=2, min=0, max=4)
+        context.update(now=1, min=0, max=4)
         return context
 
 class UploadModelView(FormView):
@@ -76,7 +77,7 @@ class UploadModelView(FormView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update(now=3, min=0, max=4)
+        context.update(now=2, min=0, max=4)
         return context
 
     def post(self, request, *args, **kwargs):
@@ -108,7 +109,7 @@ class SelectLayerView(FormView):
     def get_form_kwargs(self):
         # Override method to pass language parameter to SelectLayerForm init
         kwargs = super(FormView, self).get_form_kwargs()
-        model = load_model(self._model.id)
+        model = load_model(self._model.model.path)
         kwargs['layer'] = get_modules(model)
         return kwargs
 
@@ -117,5 +118,35 @@ class SelectLayerView(FormView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update(now=4, min=0, max=4)
+        context.update(now=3, min=0, max=4)
+        return context
+
+class ProbeView(TemplateView):
+
+    template_name = 'inspector/probe.html'
+
+    def setup(self, request, *args, **kwargs):
+        super().setup(request, *args, **kwargs)
+        if 'lang' not in request.GET:
+            raise SuspiciousOperation('`lang` parameter is missing.')
+        elif 'task' not in request.GET:
+            raise SuspiciousOperation('`task` parameter is missing.')
+        elif 'model' not in request.GET:
+            raise SuspiciousOperation('`model` parameter is missing.')
+        elif 'layer' not in request.GET:
+            raise SuspiciousOperation('`layer` parameter is missing.')
+        else:
+            self._language, self._probing_tasks, self._model, self._layer = get_request_params(request)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        model = load_model(self._model.model.path)
+        context['metrics'] = dict()
+        for probing_task in self._probing_tasks:
+            embeddings_file = get_embeddings_from_model(probing_task, self._language, model, self._layer)
+            context['metrics'][probing_task.name] = probe(probing_task, self._language, embeddings_file)
+            file_system_storage = FileSystemStorage()
+            file_system_storage.delete(embeddings_file)
+        self._model.model.delete()
+        self._model.delete()
         return context

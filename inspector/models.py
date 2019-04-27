@@ -19,6 +19,9 @@ class ProbingTask(Model):
     def __str__(self):
         return self.name
 
+    def to_camel_case(self):
+        return self.name.replace(' ', '')
+
 class Model(Model):
 
     id = UUIDField(primary_key=True, default=uuid4, editable=False)

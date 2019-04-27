@@ -9,13 +9,20 @@ def get_request_params(request):
             if 'task' in request.GET:
                 try:
                     split = request.GET['task'].split(',')
-                    probing_tasks = ProbingTask.objects.filter(pk__in=split, languages__code=language.code)
+                    probing_tasks = ProbingTask.objects.filter(pk__in=split, languages__code=language.code).order_by('name')
                     if len(split) != len(probing_tasks):
                         raise ObjectDoesNotExist()
                     if 'model' in request.GET:
                         try:
                             model = Model.objects.get(id=request.GET['model'])
-                            return (language, probing_tasks, model)
+                            if 'layer' in request.GET:
+                                try:
+                                    layer = int(request.GET['layer'])
+                                    return (language, probing_tasks, model, layer)
+                                except ValueError:
+                                    raise SuspiciousOperation('`layer` parameter is invalid.')
+                            else:
+                                return (language, probing_tasks, model)
                         except ObjectDoesNotExist:
                             raise SuspiciousOperation('`model` parameter is invalid.')
                     else:
