@@ -5,7 +5,7 @@ from django.views.generic.edit import FormView
 from .forms import SelectLanguageForm, SelectLayerForm, SelectProbingTaskForm, UploadModelForm
 from .linspector import get_modules, load_model
 from .models import Language, Model, ProbingTask
-from .util import get_request_params
+from .utils import get_request_params
 
 # Create your views here.
 class IndexView(TemplateView):
