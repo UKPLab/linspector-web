@@ -3,6 +3,11 @@
 {% block content %}
 <div class="content px-5">
   <div class="row justify-content-md-center">
+    <div class="col-md-8 mb-4">
+      <div id="polar"></div>
+    </div>
+  </div>
+  <div class="row justify-content-md-center">
     <div class="col-md-8">
       <table class="table table-hover">
         <thead>
@@ -13,11 +18,11 @@
           </tr>
         </thead>
         <tbody>
-          {% for probing_task, value in metrics.items %}
+          {% for probing_task, metric in metrics.items %}
           <tr>
             <th scope="row">{{ probing_task }}</th>
-            <td>{{ value.accuracy }}</td>
-            <td>{{ value.loss }}</td>
+            <td>{{ metric.accuracy|floatformat:3 }}</td>
+            <td>{{ metric.loss|floatformat:3 }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -25,4 +30,58 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block javascript %}
+<script src="https://code.highcharts.com/highcharts.src.js"></script>
+<script src="https://code.highcharts.com/highcharts-more.src.js"></script>
+{% comment 'Use static resources in production instead of CDN' %}
+{% load static %}
+<script src="{% static 'inspector/highcharts/highcharts.src.js' %}"></script>
+<script src="{% static 'inspector/highcharts/highcharts-more.src.js' %}"></script>
+{% endcomment %}
+<script>
+Highcharts.chart('polar', {
+  chart: {
+    polar: true,
+    type: 'area'
+  },
+  colors: ['#007bff', '#28a745', '#dc3545', '#ffc107', '#17a2b8'],
+  exporting: {
+    buttons: {
+      contextButton: {
+        enabled: false
+      }
+    }
+  },
+  title: {
+    text: null
+  },
+  xAxis: {
+    categories: [
+    {% for probing_task, _ in metrics.items %}
+    '{{ probing_task }}'{% if not forloop.last %}, {% endif %}
+    {% endfor %}
+    ],
+    tickmarkPlacement: 'on'
+  },
+  yAxis: {
+    min: 0,
+    max: 1,
+    tickAmount: 5
+  },
+  legend: {
+    enabled: false
+  },
+  series: [{
+    name: 'Accuracy',
+    data: [
+    {% for _, metric in metrics.items %}
+    {{ metric.accuracy|floatformat:3 }}{% if not forloop.last %}, {% endif %}
+    {% endfor %}
+    ],
+    pointPlacement: 'on'
+  }]
+});
+</script>
 {% endblock %}
