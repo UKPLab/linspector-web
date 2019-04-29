@@ -27,13 +27,11 @@
           <p class="card-text">Some text.</p>
         </div>
         <ul class="list-group list-group-flush text-left">
-        {% if languages %}
         {% for language in languages %}
           <li class="list-group-item">{{ language.name }}</li>
-        {% endfor %}
-        {% else %}
+        {% empty %}
           <li class="list-group-item">No languages available.</li>
-        {% endif %}
+        {% endfor %}
         </ul>
       </div>
     </div>
@@ -44,13 +42,11 @@
           <p class="card-text">Some text.</p>
         </div>
         <ul class="list-group list-group-flush text-left">
-        {% if probing_tasks %}
         {% for probing_task in probing_tasks %}
           <li class="list-group-item">{{ probing_task.name }}</li>
-        {% endfor %}
-        {% else %}
+        {% empty %}
           <li class="list-group-item">No probing tasks available.</li>
-        {% endif %}
+        {% endfor %}
         </ul>
       </div>
     </div>
