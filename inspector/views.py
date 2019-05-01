@@ -141,12 +141,16 @@ class ProbeView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         model = load_model(self._model.model.path)
-        context['metrics'] = dict()
+        metrics = dict()
         for probing_task in self._probing_tasks:
             embeddings_file = get_embeddings_from_model(probing_task, self._language, model, self._layer)
-            context['metrics'][probing_task.name] = probe(probing_task, self._language, embeddings_file)
+            metrics[probing_task.name] = probe(probing_task, self._language, embeddings_file)
             file_system_storage = FileSystemStorage()
             file_system_storage.delete(embeddings_file)
+        # Sort keys by accuracy descending
+        map = sorted(metrics, key=lambda i: metrics[i]['accuracy'], reverse=True)
+        # Use key map to create a sorted dict
+        context['metrics'] = {key: metrics[key] for key in map}
         self._model.model.delete()
         self._model.delete()
         return context
