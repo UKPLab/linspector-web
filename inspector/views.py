@@ -84,7 +84,7 @@ class UploadModelView(FormView):
         form_class = self.get_form_class()
         form = self.get_form(form_class)
         if form.is_valid():
-            self._model = Model(model=request.FILES['model'])
+            self._model = Model(upload=request.FILES['model'])
             self._model.save()
             return self.form_valid(form)
         else:
@@ -146,6 +146,6 @@ class ProbeView(TemplateView):
         map = sorted(metrics, key=lambda i: metrics[i]['accuracy'], reverse=True)
         # Use key map to create a sorted dict
         context['metrics'] = {key: metrics[key] for key in map}
-        self._model.model.delete()
+        self._model.upload.delete()
         self._model.delete()
         return context

@@ -15,7 +15,6 @@ from django.core.files.storage import FileSystemStorage
 import os
 
 from .models import Language, ProbingTask
-
 from .nn.dataset_readers.linspector_dataset_reader import LinspectorDatasetReader
 from .nn.models.linspector_linear import LinspectorLinear
 from .nn.models.multilayer_perceptron import MultilayerPerceptron
@@ -33,7 +32,7 @@ class Linspector():
     def __init__(self, language: Language, probing_tasks: List[ProbingTask], model: Model):
         self.language = language
         self.probing_tasks = probing_tasks
-        self.archive = load_archive(model.model.path)
+        self.archive = load_archive(model.upload.path)
         self.model = self.archive.model
 
     def get_layers(self) -> List:

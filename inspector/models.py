@@ -25,7 +25,7 @@ class ProbingTask(Model):
 class Model(Model):
 
     id = UUIDField(primary_key=True, default=uuid4, editable=False)
-    model = FileField(upload_to='models/')
+    upload = FileField(upload_to='models/')
 
     def __str__(self):
-        return self.model.name
+        return self.upload.name
