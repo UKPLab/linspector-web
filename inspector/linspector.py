@@ -1,17 +1,11 @@
 from allennlp.common.params import Params
 from allennlp.data import Instance, Vocabulary
 from allennlp.data.dataset_readers import DatasetReader
-from allennlp.data.fields import LabelField, TextField
 from allennlp.data.iterators import BasicIterator
-from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer
-from allennlp.data.tokenizers import Token
 from allennlp.models.archival import load_archive
 from allennlp.models.model import Model
 from allennlp.models.simple_tagger import SimpleTagger
-from allennlp.modules import Embedding, FeedForward, TextFieldEmbedder
-from allennlp.nn.activations import Activation
-from allennlp.nn.util import get_text_field_mask, sequence_cross_entropy_with_logits
-from allennlp.training.metrics import CategoricalAccuracy
+from allennlp.modules import Embedding
 from allennlp.training.trainer import Trainer
 from allennlp.training.util import evaluate
 
@@ -20,18 +14,19 @@ from django.core.files.storage import FileSystemStorage
 
 import os
 
-from overrides import overrides
-
 from .models import Language, ProbingTask
+
+from .nn.dataset_readers.linspector_dataset_reader import LinspectorDatasetReader
+from .nn.models.linspector_linear import LinspectorLinear
+from .nn.models.multilayer_perceptron import MultilayerPerceptron
 
 import numpy as np
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple
+from typing import Any, Dict, Iterable, Iterator, List, Tuple
 
 def load_model(path: str) -> nn.Module:
     archive = load_archive(path)
@@ -103,7 +98,7 @@ def probe(probing_task: ProbingTask, language: Language, embeddings_file: str) -
     params = Params({'embedding_dim': get_embedding_dim(embeddings_file), 'pretrained_file': file_system_storage.path(embeddings_file), 'trainable': False})
     word_embeddings = Embedding.from_params(vocab, params=params)
     model = LinspectorLinear(word_embeddings, vocab)
-    # model = LinspectorMultilayerPerceptron(word_embeddings, vocab, 2)
+    # model = MultilayerPerceptron(word_embeddings, vocab, 2)
     if torch.cuda.is_available():
         cuda_device = 0
         model = model.cuda(cuda_device)
@@ -116,71 +111,3 @@ def probe(probing_task: ProbingTask, language: Language, embeddings_file: str) -
     trainer.train()
     metrics = evaluate(model, test, iterator, cuda_device, batch_weight_key='')
     return metrics
-
-class LinspectorDatasetReader(DatasetReader):
-
-    def __init__(self, token_indexers: Dict[str, TokenIndexer] = None, ignore_labels: bool = False, field_key: str = 'token') -> None:
-        super().__init__(lazy=False)
-        self.token_indexers = token_indexers or {'tokens': SingleIdTokenIndexer(lowercase_tokens=True)}
-        self._ignore_labels = ignore_labels
-        self._field_key = field_key
-
-    def text_to_instance(self, token: List[Token], label: str = None) -> Instance:
-        token_field = TextField(token, self.token_indexers)
-        fields = {self._field_key: token_field}
-        if label is not None:
-            fields['label'] = LabelField(label)
-        return Instance(fields)
-
-    def _read(self, file_path: str) -> Iterator[Instance]:
-        with open(file_path) as file:
-            for line in file:
-                split = line.strip().split('\t')
-                token = Token(split[0])
-                if len(split) > 1 and not self._ignore_labels:
-                    label = split[1]
-                else:
-                    label = None
-                yield self.text_to_instance([token], label)
-
-class LinspectorLinear(Model):
-
-    def __init__(self, word_embeddings: Embedding, vocab: Vocabulary) -> None:
-        super(LinspectorLinear, self).__init__(vocab)
-        self.word_embeddings = word_embeddings
-        self.num_classes = self.vocab.get_vocab_size('labels')
-        self.hidden2tag = nn.Linear(in_features=self.word_embeddings.get_output_dim(), out_features=self.num_classes)
-        self.accuracy = CategoricalAccuracy()
-
-    @overrides
-    def forward(self, token: Dict[str, torch.Tensor], label: torch.Tensor = None) -> Dict[str, torch.Tensor]:
-        embedding = self.word_embeddings(token['tokens'])
-        embedding = torch.squeeze(embedding, dim=1)
-        mask = get_text_field_mask(token)
-        logits = self.hidden2tag(embedding)
-        reshaped_log_probs = logits.view(-1, self.num_classes)
-        class_probabilities = F.softmax(reshaped_log_probs, dim=-1)
-        output_dict = {'logits': logits, 'class_probabilities': class_probabilities}
-        if label is not None:
-            self.accuracy(logits, label, mask)
-            output_dict['loss'] = sequence_cross_entropy_with_logits(logits, label, mask)
-        return output_dict
-
-    @overrides
-    def decode(self, output_dict: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
-        predictions = output_dict['class_probabilities']
-        predictions = predictions.cpu().data.numpy()
-        argmax_indices = np.argmax(predictions, axis=-1)
-        labels = [self.vocab.get_token_from_index(x, namespace='labels') for x in argmax_indices]
-        output_dict['labels'] = labels
-        return output_dict
-
-    @overrides
-    def get_metrics(self, reset: bool = False) -> Dict[str, float]:
-        return {'accuracy': self.accuracy.get_metric(reset)}
-
-class LinspectorMultilayerPerceptron(LinspectorLinear):
-
-    def __init__(self, word_embeddings: Embedding, vocab: Vocabulary, num_layers: int = 2) -> None:
-        super(LinspectorMultilayerPerceptron, self).__init__(word_embeddings, vocab)
-        self.hidden2tag = FeedForward(input_dim=self.word_embeddings.get_output_dim(), num_layers=num_layers, hidden_dims=[self.word_embeddings.get_output_dim(), self.num_classes], activations=[Activation.by_name('relu')(), Activation.by_name('linear')()], dropout=[0.5, 0.0])

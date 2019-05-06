@@ -46,7 +46,7 @@ class SelectProbingTaskView(FormView):
 
     def get_form_kwargs(self):
         # Override method to pass language parameter to SelectProbingTaskForm init
-        kwargs = super(FormView, self).get_form_kwargs()
+        kwargs = super().get_form_kwargs()
         kwargs['language'] = self._language.code
         return kwargs
 
@@ -108,7 +108,7 @@ class SelectLayerView(FormView):
 
     def get_form_kwargs(self):
         # Override method to pass language parameter to SelectLayerForm init
-        kwargs = super(FormView, self).get_form_kwargs()
+        kwargs = super().get_form_kwargs()
         model = load_model(self._model.model.path)
         kwargs['layer'] = get_modules(model)
         return kwargs
