@@ -4,7 +4,7 @@ from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 
 from .forms import SelectLanguageForm, SelectLayerForm, SelectProbingTaskForm, UploadModelForm
-from .linspector import get_embeddings_from_model, get_modules, load_model, probe
+from .linspector import Linspector
 from .models import Language, Model, ProbingTask
 from .utils import get_request_params
 
@@ -109,8 +109,8 @@ class SelectLayerView(FormView):
     def get_form_kwargs(self):
         # Override method to pass language parameter to SelectLayerForm init
         kwargs = super().get_form_kwargs()
-        model = load_model(self._model.model.path)
-        kwargs['layer'] = get_modules(model)
+        linspector = Linspector(self._language, self._probing_tasks, self._model)
+        kwargs['layer'] = linspector.get_layers()
         return kwargs
 
     def get_success_url(self):
@@ -140,13 +140,8 @@ class ProbeView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        model = load_model(self._model.model.path)
-        metrics = dict()
-        for probing_task in self._probing_tasks:
-            embeddings_file = get_embeddings_from_model(probing_task, self._language, model, self._layer)
-            metrics[probing_task.name] = probe(probing_task, self._language, embeddings_file)
-            file_system_storage = FileSystemStorage()
-            file_system_storage.delete(embeddings_file)
+        linspector = Linspector(self._language, self._probing_tasks, self._model)
+        metrics = linspector.probe(self._layer)
         # Sort keys by accuracy descending
         map = sorted(metrics, key=lambda i: metrics[i]['accuracy'], reverse=True)
         # Use key map to create a sorted dict
