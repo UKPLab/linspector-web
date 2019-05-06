@@ -1,10 +1,12 @@
+from allennlp.models.archival import load_archive
+
 from django.core.exceptions import SuspiciousOperation
 from django.core.files.storage import FileSystemStorage
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 
 from .forms import SelectLanguageForm, SelectLayerForm, SelectProbingTaskForm, UploadModelForm
-from .linspector import Linspector
+from .linspector import LinspectorModel
 from .models import Language, Model, ProbingTask
 from .utils import get_request_params
 
@@ -109,7 +111,8 @@ class SelectLayerView(FormView):
     def get_form_kwargs(self):
         # Override method to pass language parameter to SelectLayerForm init
         kwargs = super().get_form_kwargs()
-        linspector = Linspector(self._language, self._probing_tasks, self._model)
+        archive = load_archive(self._model.upload.path)
+        linspector = LinspectorModel(self._language, self._probing_tasks, archive.model)
         kwargs['layer'] = linspector.get_layers()
         return kwargs
 
@@ -140,7 +143,8 @@ class ProbeView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        linspector = Linspector(self._language, self._probing_tasks, self._model)
+        archive = load_archive(self._model.upload.path)
+        linspector = LinspectorModel(self._language, self._probing_tasks, archive.model)
         metrics = linspector.probe(self._layer)
         # Sort keys by accuracy descending
         map = sorted(metrics, key=lambda i: metrics[i]['accuracy'], reverse=True)
