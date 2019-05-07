@@ -14,10 +14,13 @@ from django.conf import settings
 
 import os
 
-from .models import Language, ProbingTask
-from .nn.dataset_readers.linspector_dataset_reader import LinspectorDatasetReader
-from .nn.models.linspector_linear import LinspectorLinear
-from .nn.models.multilayer_perceptron import MultilayerPerceptron
+from inspector.models import Language, ProbingTask
+from .dataset_readers.contrastive_dataset_reader import ContrastiveDatasetReader
+from .dataset_readers.intrinsic_dataset_reader import IntrinsicDatasetReader
+from .dataset_readers.linspector_dataset_reader import LinspectorDatasetReader
+from .models.linspector_linear import LinspectorLinear
+from .models.contrastive_linear import ContrastiveLinear
+from .models.multilayer_perceptron import MultilayerPerceptron
 
 import numpy as np
 
@@ -35,8 +38,12 @@ class Linspector(ABC):
         self.language = language
         self.probing_tasks = probing_tasks
 
-    def _get_intrinsic_data(self, probing_task: ProbingTask, reader: DatasetReader) -> Tuple[Iterable[Instance], Iterable[Instance], Iterable[Instance]]:
+    def _get_intrinsic_data(self, probing_task: ProbingTask) -> Tuple[Iterable[Instance], Iterable[Instance], Iterable[Instance]]:
         base_path = os.path.join(settings.MEDIA_ROOT, 'intrinsic_data', probing_task.to_camel_case(), self.language.code)
+        if probing_task.contrastive:
+            reader = ContrastiveDatasetReader()
+        else:
+            reader = LinspectorDatasetReader()
         # Read intrinsic vocab
         train = reader.read(os.path.join(base_path, 'train.txt'))
         dev = reader.read(os.path.join(base_path, 'dev.txt'))
@@ -53,14 +60,19 @@ class Linspector(ABC):
     def probe(self, layer: int) -> Dict[str, Any]:
         metrics = dict()
         for probing_task in self.probing_tasks:
-            reader = LinspectorDatasetReader()
-            train, dev, test = self._get_intrinsic_data(probing_task, reader)
+            if probing_task.contrastive:
+                reader = ContrastiveDatasetReader()
+            else:
+                reader = LinspectorDatasetReader()
+            train, dev, test = self._get_intrinsic_data(probing_task)
             vocab = Vocabulary.from_instances(train + dev)
             embeddings_file = self._get_embeddings_from_model(probing_task, layer)
             params = Params({'embedding_dim': self._get_embedding_dim(embeddings_file), 'pretrained_file': embeddings_file.name, 'trainable': False})
             word_embeddings = Embedding.from_params(vocab, params=params)
-            model = LinspectorLinear(word_embeddings, vocab)
-            # model = MultilayerPerceptron(word_embeddings, vocab, 2)
+            if probing_task.contrastive:
+                model = ContrastiveLinear(word_embeddings, vocab)
+            else:
+                model = LinspectorLinear(word_embeddings, vocab)
             if torch.cuda.is_available():
                 cuda_device = 0
                 model = model.cuda(cuda_device)
@@ -93,9 +105,11 @@ class LinspectorModel(Linspector):
 
     def _get_embeddings_from_model(self, probing_task: ProbingTask, layer: int) -> NamedTemporaryFile:
         # Get intrinsic data for probing task
-        # Set field_key to 'tokens' to work with SimpleTagger
-        reader = LinspectorDatasetReader(ignore_labels=True, field_key='tokens')
-        train, dev, test = self._get_intrinsic_data(probing_task, reader)
+        # Set field_key to 'tokens' for SimpleTagger
+        field_key='tokens'
+        reader = IntrinsicDatasetReader(field_key=field_key, contrastive=probing_task.contrastive)
+        base_path = os.path.join(settings.MEDIA_ROOT, 'intrinsic_data', probing_task.to_camel_case(), self.language.code)
+        vocab = reader.read(base_path)
         # Select module
         module = list(self.model.encoder.modules())[layer]
         # Get embeddings for vocab
@@ -104,19 +118,18 @@ class LinspectorModel(Linspector):
             # input[0] contains a torch.nn.utils.rnn.PackedSequence which also has a batch_sizes property
             embedding.copy_(input[0].data)
         handle = module.register_forward_hook(hook)
-        vocab = set()
         with NamedTemporaryFile(mode='w', suffix='.vec', delete=False) as file:
             with torch.no_grad():
-                for instance in train + dev + test:
-                    # Lowercase tokens
-                    token = str(instance['tokens'][0]).lower()
-                    # Filter duplicates
-                    if token not in vocab:
-                        self.model.forward_on_instance(instance)
-                        # Write token and embedding to file
-                        file.write('{} {}\n'.format(token, ' '.join(map(str, embedding.numpy().tolist()[0][0]))))
-                        vocab.add(token)
+                for instance in vocab:
+                    token = str(instance[field_key][0])
+                    self.model.forward_on_instance(instance)
+                    # Write token and embedding to file
+                    file.write('{} {}\n'.format(token, ' '.join(map(str, embedding.numpy().tolist()[0][0]))))
         handle.remove()
         return file
 
+class LinspectorStatic(Linspector):
 
+    def __init__(self, language: Language, probing_tasks: List[ProbingTask], static_embeddings: TextIO):
+        super().__init__(language, probing_tasks)
+        self.static_embeddings = static_embeddings

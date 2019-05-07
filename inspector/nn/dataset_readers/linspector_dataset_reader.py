@@ -1,25 +1,23 @@
 from allennlp.data import Instance
 from allennlp.data.dataset_readers import DatasetReader
 from allennlp.data.fields import LabelField, TextField
-from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer
+from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.data.tokenizers import Token
 
 from overrides import overrides
 
-from typing import Dict, Iterator, List
+from typing import Iterator, List
 
 class LinspectorDatasetReader(DatasetReader):
 
-    def __init__(self, token_indexers: Dict[str, TokenIndexer] = None, ignore_labels: bool = False, field_key: str = 'token') -> None:
+    def __init__(self) -> None:
         super().__init__(lazy=False)
-        self.token_indexers = token_indexers or {'tokens': SingleIdTokenIndexer(lowercase_tokens=True)}
-        self._ignore_labels = ignore_labels
-        self._field_key = field_key
+        self.token_indexers = {'tokens': SingleIdTokenIndexer(lowercase_tokens=True)}
 
     @overrides
     def text_to_instance(self, token: List[Token], label: str = None) -> Instance:
         token_field = TextField(token, self.token_indexers)
-        fields = {self._field_key: token_field}
+        fields = {'token': token_field}
         if label is not None:
             fields['label'] = LabelField(label)
         return Instance(fields)
@@ -30,7 +28,7 @@ class LinspectorDatasetReader(DatasetReader):
             for line in file:
                 split = line.strip().split('\t')
                 token = Token(split[0])
-                if len(split) > 1 and not self._ignore_labels:
+                if len(split) > 1:
                     label = split[1]
                 else:
                     label = None

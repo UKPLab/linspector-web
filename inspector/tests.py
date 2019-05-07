@@ -13,9 +13,9 @@ import json
 
 import os
 
-from .linspector import LinspectorModel
 from .models import Language, Model, ProbingTask
 from .nn.dataset_readers.linspector_dataset_reader import LinspectorDatasetReader
+from .nn.linspector import LinspectorModel
 from .nn.models.linspector_linear import LinspectorLinear
 
 import subprocess
@@ -69,13 +69,12 @@ class LinspectorModelTests(TestCase):
             probing_tasks = ProbingTask.objects.filter(languages__code=language.code)
             linspector = LinspectorModel(language, probing_tasks, archive.model)
             for probing_task in probing_tasks:
-                reader = LinspectorDatasetReader(field_key='tokens')
-                train, dev, test = linspector._get_intrinsic_data(probing_task, reader)
+                train, dev, test = linspector._get_intrinsic_data(probing_task)
                 self.assertGreater(len(train), 0)
                 self.assertGreater(len(dev), 0)
                 self.assertGreater(len(test), 0)
 
-    @tag('slow')
+    @tag('slow', 'core')
     def test_embeddings_file(self):
         archive = load_archive(self.archive_path)
         languages = Language.objects.all()

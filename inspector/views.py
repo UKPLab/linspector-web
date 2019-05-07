@@ -6,8 +6,8 @@ from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 
 from .forms import SelectLanguageForm, SelectLayerForm, SelectProbingTaskForm, UploadModelForm
-from .linspector import LinspectorModel
 from .models import Language, Model, ProbingTask
+from .nn.linspector import LinspectorModel
 from .utils import get_request_params
 
 class IndexView(TemplateView):
