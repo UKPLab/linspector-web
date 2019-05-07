@@ -105,7 +105,7 @@ class LinspectorModelTests(TestCase):
     def test_classifier(self):
         archive = load_archive(self.archive_path)
         # Exclude contrastive tasks
-        probing_tasks = ProbingTask.objects.exclude(name__contains='Feat')[:1]
+        probing_tasks = ProbingTask.objects.filter(contrastive=False)[:1]
         language = probing_tasks[0].languages.first()
         linspector = LinspectorModel(language, probing_tasks, archive.model)
         _, metric = linspector.probe(layer=0).popitem()
@@ -115,7 +115,7 @@ class LinspectorModelTests(TestCase):
     def test_contrastive_classifier(self):
         archive = load_archive(self.archive_path)
         # Filter for contrastive tasks
-        probing_tasks = ProbingTask.objects.filter(name__contains='Feat')[:1]
+        probing_tasks = ProbingTask.objects.filter(contrastive=True)[:1]
         language = probing_tasks[0].languages.first()
         linspector = LinspectorModel(language, probing_tasks, archive.model)
         _, metric = linspector.probe(layer=0).popitem()

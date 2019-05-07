@@ -1,4 +1,4 @@
-from django.db.models import CharField, FileField, ManyToManyField, Model, UUIDField
+from django.db.models import BooleanField, CharField, FileField, ManyToManyField, Model, UUIDField
 
 from uuid import uuid4
 
@@ -14,6 +14,7 @@ class ProbingTask(Model):
 
     name = CharField(max_length=20, unique=True)
     languages = ManyToManyField(Language)
+    contrastive = BooleanField(default=False)
 
     def __str__(self):
         return self.name
