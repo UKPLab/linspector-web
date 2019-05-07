@@ -1,3 +1,5 @@
+from abc import ABC
+
 from allennlp.common.params import Params
 from allennlp.data import Instance, Vocabulary
 from allennlp.data.dataset_readers import DatasetReader
@@ -27,7 +29,7 @@ import torch.optim as optim
 
 from typing import Any, Dict, Iterable, Iterator, List, TextIO, Tuple
 
-class Linspector():
+class Linspector(ABC):
 
     def __init__(self, language: Language, probing_tasks: List[ProbingTask]):
         self.language = language

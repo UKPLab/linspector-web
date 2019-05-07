@@ -2,7 +2,6 @@ from django.db.models import CharField, FileField, ManyToManyField, Model, UUIDF
 
 from uuid import uuid4
 
-# Create your models here.
 class Language(Model):
 
     name = CharField(max_length=20, unique=True)
@@ -25,7 +24,7 @@ class ProbingTask(Model):
 class Model(Model):
 
     id = UUIDField(primary_key=True, default=uuid4, editable=False)
-    upload = FileField(upload_to='models/')
+    upload = FileField()
 
     def __str__(self):
         return self.upload.name

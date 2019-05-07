@@ -10,7 +10,6 @@ from .linspector import LinspectorModel
 from .models import Language, Model, ProbingTask
 from .utils import get_request_params
 
-# Create your views here.
 class IndexView(TemplateView):
 
     template_name = 'inspector/index.html'
@@ -145,7 +144,7 @@ class ProbeView(TemplateView):
         context = super().get_context_data(**kwargs)
         archive = load_archive(self._model.upload.path)
         linspector = LinspectorModel(self._language, self._probing_tasks, archive.model)
-        metrics = linspector.probe(self._layer)
+        metrics = linspector.probe(layer=self._layer)
         # Sort keys by accuracy descending
         map = sorted(metrics, key=lambda i: metrics[i]['accuracy'], reverse=True)
         # Use key map to create a sorted dict
