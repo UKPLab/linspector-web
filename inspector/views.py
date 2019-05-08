@@ -2,6 +2,7 @@ from allennlp.models.archival import load_archive
 
 from django.core.exceptions import SuspiciousOperation
 from django.core.files.storage import FileSystemStorage
+from django.http import JsonResponse
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 
@@ -61,7 +62,26 @@ class SelectProbingTaskView(FormView):
         context.update(back='../', now=1, min=0, max=4)
         return context
 
-class UploadModelView(FormView):
+class UploadModelResponseMixin:
+
+    def form_invalid(self, form):
+        response = super().form_invalid(form)
+        if self.request.is_ajax():
+            return JsonResponse(form.errors, status=400)
+        else:
+            return response
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        if self.request.is_ajax():
+            data = {
+                'url': self.get_success_url()
+            }
+            return JsonResponse(data)
+        else:
+            return response
+
+class UploadModelView(UploadModelResponseMixin, FormView):
 
     template_name = 'inspector/upload_model.html'
     form_class = UploadModelForm
