@@ -4,14 +4,9 @@ from allennlp.data.tokenizers import Token
 
 from .linspector_dataset_reader import LinspectorDatasetReader
 
-from overrides import overrides
-
-from typing import Iterator, List
-
 class ContrastiveDatasetReader(LinspectorDatasetReader):
 
-    @overrides
-    def text_to_instance(self, first_token: List[Token], second_token: List[Token], label: str = None) -> Instance:
+    def text_to_instance(self, first_token, second_token, label = None):
         first_token_field = TextField(first_token, self.token_indexers)
         second_token_field = TextField(second_token, self.token_indexers)
         fields = {'first_token': first_token_field, 'second_token': second_token_field}
@@ -19,8 +14,7 @@ class ContrastiveDatasetReader(LinspectorDatasetReader):
             fields['label'] = LabelField(label)
         return Instance(fields)
 
-    @overrides
-    def _read(self, file_path: str) -> Iterator[Instance]:
+    def _read(self, file_path):
         with open(file_path) as file:
             for line in file:
                 split = line.strip().split('\t')

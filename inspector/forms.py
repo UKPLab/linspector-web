@@ -1,4 +1,7 @@
+from django.core.exceptions import ValidationError
 from django.forms import CheckboxSelectMultiple, ChoiceField, FileField, FileInput, Form, ModelChoiceField, ModelMultipleChoiceField, Select
+
+import os
 
 from .models import Language, ProbingTask
 
@@ -16,6 +19,13 @@ class SelectProbingTaskForm(Form):
 class UploadModelForm(Form):
 
     model = FileField(required=True, label='Model', label_suffix='', widget=FileInput(attrs={'class': 'custom-file-input'}))
+
+    def clean_model(self):
+        data = self.cleaned_data['model']
+        _, extension = os.path.splitext(data.name)
+        if extension not in ['.gz', '.vec']:
+            raise ValidationError('File extension is invalid.')
+        return data
 
 class SelectLayerForm(Form):
 

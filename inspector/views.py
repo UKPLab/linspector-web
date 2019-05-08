@@ -5,9 +5,11 @@ from django.core.files.storage import FileSystemStorage
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 
+import os
+
 from .forms import SelectLanguageForm, SelectLayerForm, SelectProbingTaskForm, UploadModelForm
 from .models import Language, Model, ProbingTask
-from .nn.linspector import LinspectorModel
+from .nn.linspector import LinspectorArchiveModel, LinspectorStaticEmbeddings
 from .utils import get_request_params
 
 class IndexView(TemplateView):
@@ -74,7 +76,13 @@ class UploadModelView(FormView):
             self._language, self._probing_tasks = get_request_params(request)
 
     def get_success_url(self):
-        return '/language/probing-task/model/layer/?lang={}&task={}&model={}'.format(self._language.code, ','.join([str(task.id) for task in self._probing_tasks]), self._model.id)
+        _, extension = os.path.splitext(self._model.upload.name)
+        if extension == '.gz':
+            url = '/language/probing-task/model/layer/?lang={}&task={}&model={}'
+        else:
+            # Skip layer selection for static embeddings
+            url = '/language/probing-task/model/layer/probe/?lang={}&task={}&model={}'
+        return url.format(self._language.code, ','.join([str(task.id) for task in self._probing_tasks]), self._model.id)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -112,7 +120,7 @@ class SelectLayerView(FormView):
         # Override method to pass language parameter to SelectLayerForm init
         kwargs = super().get_form_kwargs()
         archive = load_archive(self._model.upload.path)
-        linspector = LinspectorModel(self._language, self._probing_tasks, archive.model)
+        linspector = LinspectorArchiveModel(self._language, self._probing_tasks, archive.model)
         kwargs['layer'] = linspector.get_layers()
         return kwargs
 
@@ -138,15 +146,26 @@ class ProbeView(TemplateView):
         elif 'model' not in request.GET:
             raise SuspiciousOperation('`model` parameter is missing.')
         elif 'layer' not in request.GET:
-            raise SuspiciousOperation('`layer` parameter is missing.')
+            # Skip layer selection for static embeddings
+            self._language, self._probing_tasks, self._model = get_request_params(request)
+            _, extension = os.path.splitext(self._model.upload.name)
+            if extension == '.gz':
+                raise SuspiciousOperation('`layer` parameter is missing.')
         else:
             self._language, self._probing_tasks, self._model, self._layer = get_request_params(request)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        archive = load_archive(self._model.upload.path)
-        linspector = LinspectorModel(self._language, self._probing_tasks, archive.model)
-        metrics = linspector.probe(layer=self._layer)
+        if hasattr(self, '_layer'):
+            # Probe archive model
+            archive = load_archive(self._model.upload.path)
+            linspector = LinspectorArchiveModel(self._language, self._probing_tasks, archive.model)
+            linspector.layer = self._layer
+            metrics = linspector.probe()
+        else:
+            # Probe static embeddings
+            linspector = LinspectorStaticEmbeddings(self._language, self._probing_tasks, self._model.upload.path)
+            metrics = linspector.probe()
         # Sort keys by accuracy descending
         map = sorted(metrics, key=lambda i: metrics[i]['accuracy'], reverse=True)
         # Use key map to create a sorted dict
