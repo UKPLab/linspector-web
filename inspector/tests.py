@@ -127,16 +127,16 @@ class LinspectorArchiveModelTests(TestCase):
         probing_tasks = ProbingTask.objects.filter(name='POS')[:1]
         language = Language.objects.get(code='de')
         linspector = LinspectorArchiveModel(language, probing_tasks, archive.model)
-        max = 0.0
+        max_accuracy = 0.0
         for i in range(0, 10):
             _, metric = linspector.probe().popitem()
-            if max > 0:
-                # Check that accuracy does not diverge from max accuracy between iterations
-                self.assertLess(abs(max - metric['accuracy']), 0.05)
-                max = max(max, metric['accuracy'])
+            if max_accuracy > 0:
+                # Check that accuracy does not diverge from max accuracy between iterations (with tolerance)
+                self.assertLess(abs(max_accuracy - metric['accuracy']), 0.05)
+                max_accuracy = max(max_accuracy, metric['accuracy'])
             else:
-                # Set max to inital value
-                max = metric['accuracy']
+                # Set max accuracy to inital value
+                max_accuracy = metric['accuracy']
 
 class LinspectorStaticEmbeddingsTests(TestCase):
 
