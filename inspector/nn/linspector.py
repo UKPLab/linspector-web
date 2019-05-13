@@ -16,8 +16,8 @@ from inspector.models import Language, ProbingTask
 from .dataset_readers.contrastive_dataset_reader import ContrastiveDatasetReader
 from .dataset_readers.intrinsic_dataset_reader import IntrinsicDatasetReader
 from .dataset_readers.linspector_dataset_reader import LinspectorDatasetReader
-from .models.linspector_linear import LinspectorLinear
 from .models.contrastive_linear import ContrastiveLinear
+from .models.linspector_linear import LinspectorLinear
 
 import numpy as np
 
@@ -60,10 +60,6 @@ class Linspector(ABC):
     def probe(self):
         metrics = dict()
         for probing_task in self.probing_tasks:
-            if probing_task.contrastive:
-                reader = ContrastiveDatasetReader()
-            else:
-                reader = LinspectorDatasetReader()
             train, dev, test = self._get_intrinsic_data(probing_task)
             vocab = Vocabulary.from_instances(train + dev)
             embeddings_file = self._get_embeddings_from_model(probing_task)
@@ -81,9 +77,9 @@ class Linspector(ABC):
             optimizer = optim.Adam(model.parameters())
             iterator = BasicIterator(batch_size=16)
             iterator.index_with(vocab)
-            trainer = Trainer(model=model, optimizer=optimizer, iterator=iterator, train_dataset=train, validation_dataset=dev, patience=5, num_epochs=20, cuda_device=cuda_device)
+            trainer = Trainer(model=model, optimizer=optimizer, iterator=iterator, train_dataset=train, validation_dataset=dev, patience=5, validation_metric='+accuracy', num_epochs=20, cuda_device=cuda_device, grad_clipping=5.0)
             trainer.train()
-            metrics[probing_task.name] = evaluate(model, test, iterator, cuda_device, batch_weight_key='')
+            metrics[probing_task.name] = evaluate(trainer.model, test, iterator, cuda_device, batch_weight_key='')
             os.unlink(embeddings_file)
         return metrics
 
