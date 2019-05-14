@@ -61,7 +61,8 @@ class Linspector(ABC):
         metrics = dict()
         for probing_task in self.probing_tasks:
             train, dev, test = self._get_intrinsic_data(probing_task)
-            vocab = Vocabulary.from_instances(train + dev)
+            # Add test data to vocabulary else evaluation will be unstable
+            vocab = Vocabulary.from_instances(train + dev + test)
             embeddings_file = self._get_embeddings_from_model(probing_task)
             params = Params({'embedding_dim': self._get_embedding_dim(embeddings_file), 'pretrained_file': embeddings_file, 'trainable': False})
             word_embeddings = Embedding.from_params(vocab, params=params)
