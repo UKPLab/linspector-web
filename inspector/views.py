@@ -36,7 +36,7 @@ class SelectLanguageView(FormView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update(back='../', now=0, min=0, max=4)
+        context['back'] = '../'
         return context
 
 class SelectProbingTaskView(FormView):
@@ -62,7 +62,7 @@ class SelectProbingTaskView(FormView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update(back='../', now=1, min=0, max=4)
+        context['back'] = '../'
         return context
 
 class UploadModelResponseMixin:
@@ -104,13 +104,12 @@ class UploadModelView(UploadModelResponseMixin, FormView):
             url = 'layer/?lang={}&task={}&model={}'
         else:
             # Skip layer selection for static embeddings
-            url = 'layer/probe/?lang={}&task={}&model={}'
+            url = 'probe/?lang={}&task={}&model={}'
         return url.format(self._language.code, ','.join([str(task.id) for task in self._probing_tasks]), self._model.id)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['back'] = '../?lang={}'.format(self._language.code)
-        context.update(now=2, min=0, max=4)
         return context
 
     def post(self, request, *args, **kwargs):
@@ -153,7 +152,6 @@ class SelectLayerView(FormView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['back'] = '../?lang={}&task={}'.format(self._language.code, ','.join([str(task.id) for task in self._probing_tasks]))
-        context.update(now=3, min=0, max=4)
         return context
 
 class ProbeView(TemplateView):
