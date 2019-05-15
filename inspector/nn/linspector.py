@@ -23,7 +23,7 @@ import numpy as np
 
 import shutil
 
-from tempfile import NamedTemporaryFile
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 import torch
 import torch.nn as nn
@@ -78,14 +78,16 @@ class Linspector(ABC):
         optimizer = optim.Adam(model.parameters())
         iterator = BasicIterator(batch_size=16)
         iterator.index_with(vocab)
-        trainer = LinspectorTrainer(model=model, optimizer=optimizer, iterator=iterator, train_dataset=train, validation_dataset=dev, patience=5, validation_metric='+accuracy', num_epochs=20, cuda_device=cuda_device, grad_clipping=5.0)
-        def trainer_callback(progress):
-            for callback in self._callbacks:
-                # Fill second half of progress with trainer callback
-                callback(0.5 + progress / 2)
-        trainer.subscribe(trainer_callback)
-        trainer.train()
-        metrics = evaluate(trainer.model, test, iterator, cuda_device, batch_weight_key='')
+        # Use a serialization_dir otherwise evaluation uses last weights instead of best
+        with TemporaryDirectory() as serialization_dir:
+            trainer = LinspectorTrainer(model=model, optimizer=optimizer, iterator=iterator, train_dataset=train, validation_dataset=dev, patience=5, validation_metric='+accuracy', num_epochs=20, serialization_dir=serialization_dir, cuda_device=cuda_device, grad_clipping=5.0)
+            def trainer_callback(progress):
+                for callback in self._callbacks:
+                    # Fill second half of progress with trainer callback
+                    callback(0.5 + progress / 2)
+            trainer.subscribe(trainer_callback)
+            trainer.train()
+            metrics = evaluate(trainer.model, test, iterator, cuda_device, batch_weight_key='')
         os.unlink(embeddings_file)
         return metrics
 
