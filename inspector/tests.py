@@ -58,7 +58,7 @@ class LinspectorArchiveModelTests(TestCase):
         archive = load_archive(self.archive_path)
         language = Language.objects.all().first()
         probing_tasks = ProbingTask.objects.filter(languages__code=language.code)
-        linspector = LinspectorArchiveModel(language, probing_tasks, archive.model)
+        linspector = LinspectorArchiveModel(language, probing_tasks.first(), archive.model)
         self.assertGreater(len(linspector.get_layers()), 0)
 
     @tag('core')
@@ -67,9 +67,9 @@ class LinspectorArchiveModelTests(TestCase):
         languages = Language.objects.all()
         for language in languages:
             probing_tasks = ProbingTask.objects.filter(languages__code=language.code)
-            linspector = LinspectorArchiveModel(language, probing_tasks, archive.model)
             for probing_task in probing_tasks:
-                train, dev, test = linspector._get_intrinsic_data(probing_task)
+                linspector = LinspectorArchiveModel(language, probing_task, archive.model)
+                train, dev, test = linspector._get_intrinsic_data()
                 self.assertGreater(len(train), 0)
                 self.assertGreater(len(dev), 0)
                 self.assertGreater(len(test), 0)
@@ -80,9 +80,9 @@ class LinspectorArchiveModelTests(TestCase):
         languages = Language.objects.all()
         for language in languages:
             probing_tasks = ProbingTask.objects.filter(languages__code=language.code)
-            linspector = LinspectorArchiveModel(language, probing_tasks, archive.model)
             for probing_task in probing_tasks:
-                embeddings_file = linspector._get_embeddings_from_model(probing_task)
+                linspector = LinspectorArchiveModel(language, probing_task, archive.model)
+                embeddings_file = linspector._get_embeddings_from_model()
                 self.assertTrue(os.path.isfile(embeddings_file))
                 self.assertGreater(os.path.getsize(embeddings_file), 0)
                 embedding_dim = linspector._get_embedding_dim(embeddings_file)
@@ -95,48 +95,48 @@ class LinspectorArchiveModelTests(TestCase):
         languages = Language.objects.all()
         for language in languages:
             probing_tasks = ProbingTask.objects.filter(languages__code=language.code)
-            linspector = LinspectorArchiveModel(language, probing_tasks, archive.model)
-            metrics = linspector.probe()
-            for metric in metrics.values():
-                self.assertTrue(isinstance(metric['accuracy'], float))
+            for probing_task in probing_tasks:
+                linspector = LinspectorArchiveModel(language, probing_task, archive.model)
+                metrics = linspector.probe()
+                self.assertTrue(isinstance(metrics['accuracy'], float))
 
     @tag('core', 'nn')
     def test_classifier(self):
         archive = load_archive(self.archive_path)
         # Exclude contrastive tasks
-        probing_tasks = ProbingTask.objects.filter(contrastive=False)[:1]
-        language = probing_tasks[0].languages.first()
-        linspector = LinspectorArchiveModel(language, probing_tasks, archive.model)
-        _, metric = linspector.probe().popitem()
-        self.assertGreater(metric['accuracy'], 0)
+        probing_task = ProbingTask.objects.filter(contrastive=False).first()
+        language = probing_task.languages.first()
+        linspector = LinspectorArchiveModel(language, probing_task, archive.model)
+        metrics = linspector.probe()
+        self.assertGreater(metrics['accuracy'], 0)
 
     @tag('core', 'nn', 'contrastive')
     def test_contrastive_classifier(self):
         archive = load_archive(self.archive_path)
         # Filter for contrastive tasks
-        probing_tasks = ProbingTask.objects.filter(contrastive=True)[:1]
-        language = probing_tasks[0].languages.first()
-        linspector = LinspectorArchiveModel(language, probing_tasks, archive.model)
-        _, metric = linspector.probe().popitem()
-        self.assertGreater(metric['accuracy'], 0)
+        probing_task = ProbingTask.objects.filter(contrastive=True).first()
+        language = probing_task.languages.first()
+        linspector = LinspectorArchiveModel(language, probing_task, archive.model)
+        metrics = linspector.probe()
+        self.assertGreater(metrics['accuracy'], 0)
 
     @tag('slow', 'nn', 'stability')
     def test_accuracy_stability(self):
         archive = load_archive(self.archive_path)
         # Get POS for German
-        probing_tasks = ProbingTask.objects.filter(name='POS')[:1]
+        probing_task = ProbingTask.objects.filter(name='POS').first()
         language = Language.objects.get(code='de')
-        linspector = LinspectorArchiveModel(language, probing_tasks, archive.model)
+        linspector = LinspectorArchiveModel(language, probing_task, archive.model)
         max_accuracy = 0.0
         for i in range(0, 10):
-            _, metric = linspector.probe().popitem()
+            metrics = linspector.probe()
             if max_accuracy > 0:
                 # Check that accuracy does not diverge from max accuracy between iterations (with tolerance)
-                self.assertLess(abs(max_accuracy - metric['accuracy']), 0.05)
-                max_accuracy = max(max_accuracy, metric['accuracy'])
+                self.assertLess(abs(max_accuracy - metrics['accuracy']), 0.05)
+                max_accuracy = max(max_accuracy, metrics['accuracy'])
             else:
                 # Set max accuracy to inital value
-                max_accuracy = metric['accuracy']
+                max_accuracy = metrics['accuracy']
 
 class LinspectorStaticEmbeddingsTests(TestCase):
 
@@ -151,8 +151,8 @@ class LinspectorStaticEmbeddingsTests(TestCase):
 
     @tag('core', 'nn', 'static')
     def test_classifier(self):
-        probing_tasks = ProbingTask.objects.filter(name='POS')[:1]
-        language = probing_tasks[0].languages.get(code='de')
-        linspector = LinspectorStaticEmbeddings(language, probing_tasks, self.embeddings_file)
-        _, metric = linspector.probe().popitem()
-        self.assertGreater(metric['accuracy'], 0)
+        probing_task = ProbingTask.objects.filter(name='POS').first()
+        language = probing_task.languages.get(code='de')
+        linspector = LinspectorStaticEmbeddings(language, probing_task, self.embeddings_file)
+        metrics = linspector.probe()
+        self.assertGreater(metrics['accuracy'], 0)

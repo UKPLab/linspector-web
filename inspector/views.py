@@ -1,5 +1,7 @@
 from allennlp.models.archival import load_archive
 
+from celery.result import AsyncResult
+
 from django.core.exceptions import SuspiciousOperation
 from django.core.files.storage import FileSystemStorage
 from django.http import JsonResponse
@@ -10,7 +12,8 @@ import os
 
 from .forms import SelectLanguageForm, SelectLayerForm, SelectProbingTaskForm, UploadModelForm
 from .models import Language, Model, ProbingTask
-from .nn.linspector import LinspectorArchiveModel, LinspectorStaticEmbeddings
+from .nn.linspector import LinspectorArchiveModel
+from .tasks import probe
 from .utils import get_request_params
 
 class IndexView(TemplateView):
@@ -29,7 +32,7 @@ class SelectLanguageView(FormView):
     form_class = SelectLanguageForm
 
     def get_success_url(self):
-        return '/language/probing-task/?lang={}'.format(self.request.POST['language'])
+        return 'probing-task/?lang={}'.format(self.request.POST['language'])
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -55,7 +58,7 @@ class SelectProbingTaskView(FormView):
         return kwargs
 
     def get_success_url(self):
-        return '/language/probing-task/model/?lang={}&task={}'.format(self._language.code, ','.join(self.request.POST.getlist('probing_task')))
+        return 'model/?lang={}&task={}'.format(self._language.code, ','.join(self.request.POST.getlist('probing_task')))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -98,10 +101,10 @@ class UploadModelView(UploadModelResponseMixin, FormView):
     def get_success_url(self):
         _, extension = os.path.splitext(self._model.upload.name)
         if extension == '.gz':
-            url = '/language/probing-task/model/layer/?lang={}&task={}&model={}'
+            url = 'layer/?lang={}&task={}&model={}'
         else:
             # Skip layer selection for static embeddings
-            url = '/language/probing-task/model/layer/probe/?lang={}&task={}&model={}'
+            url = 'layer/probe/?lang={}&task={}&model={}'
         return url.format(self._language.code, ','.join([str(task.id) for task in self._probing_tasks]), self._model.id)
 
     def get_context_data(self, **kwargs):
@@ -140,12 +143,12 @@ class SelectLayerView(FormView):
         # Override method to pass language parameter to SelectLayerForm init
         kwargs = super().get_form_kwargs()
         archive = load_archive(self._model.upload.path)
-        linspector = LinspectorArchiveModel(self._language, self._probing_tasks, archive.model)
+        linspector = LinspectorArchiveModel(self._language, self._probing_tasks.first(), archive.model)
         kwargs['layer'] = linspector.get_layers()
         return kwargs
 
     def get_success_url(self):
-        return '/language/probing-task/model/layer/probe/?lang={}&task={}&model={}&layer={}'.format(self._language.code, ','.join([str(task.id) for task in self._probing_tasks]), self._model.id, self.request.POST['layer'])
+        return 'probe/?lang={}&task={}&model={}&layer={}'.format(self._language.code, ','.join([str(task.id) for task in self._probing_tasks]), self._model.id, self.request.POST['layer'])
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -159,7 +162,12 @@ class ProbeView(TemplateView):
 
     def setup(self, request, *args, **kwargs):
         super().setup(request, *args, **kwargs)
-        if 'lang' not in request.GET:
+        if request.is_ajax():
+            if 'id' not in request.GET:
+                raise SuspiciousOperation('`id` parameter is missing.')
+            else:
+                self._result = AsyncResult(request.GET['id'])
+        elif 'lang' not in request.GET:
             raise SuspiciousOperation('`lang` parameter is missing.')
         elif 'task' not in request.GET:
             raise SuspiciousOperation('`task` parameter is missing.')
@@ -167,29 +175,46 @@ class ProbeView(TemplateView):
             raise SuspiciousOperation('`model` parameter is missing.')
         elif 'layer' not in request.GET:
             # Skip layer selection for static embeddings
-            self._language, self._probing_tasks, self._model = get_request_params(request)
-            _, extension = os.path.splitext(self._model.upload.name)
+            language, probing_tasks, model = get_request_params(request)
+            _, extension = os.path.splitext(model.upload.name)
             if extension == '.gz':
                 raise SuspiciousOperation('`layer` parameter is missing.')
+            self._task = probe.delay(language.pk, [probing_task.pk for probing_task in probing_tasks], model.id)
         else:
-            self._language, self._probing_tasks, self._model, self._layer = get_request_params(request)
+            language, probing_tasks, model, layer = get_request_params(request)
+            self._task = probe.delay(language.pk, [probing_task.pk for probing_task in probing_tasks], model.id, layer)
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.is_ajax():
+            data = {
+                'state': self._result.state,
+                'info': self._result.info
+            }
+            if self._result.state == 'SUCCESS':
+                data['url'] = 'result/?id={}'.format(self._result.id)
+            return JsonResponse(data)
+        else:
+            return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        if hasattr(self, '_layer'):
-            # Probe archive model
-            archive = load_archive(self._model.upload.path)
-            linspector = LinspectorArchiveModel(self._language, self._probing_tasks, archive.model)
-            linspector.layer = self._layer
-            metrics = linspector.probe()
+        context['task_id'] = self._task.task_id
+        return context
+
+class ShowResultView(TemplateView):
+
+    template_name = 'inspector/show_result.html'
+
+    def setup(self, request, *args, **kwargs):
+        super().setup(request, *args, **kwargs)
+        if 'id' not in request.GET:
+            raise SuspiciousOperation('`id` parameter is missing.')
         else:
-            # Probe static embeddings
-            linspector = LinspectorStaticEmbeddings(self._language, self._probing_tasks, self._model.upload.path)
-            metrics = linspector.probe()
-        # Sort keys by accuracy descending
-        map = sorted(metrics, key=lambda i: metrics[i]['accuracy'], reverse=True)
-        # Use key map to create a sorted dict
-        context['metrics'] = {key: metrics[key] for key in map}
-        self._model.upload.delete()
-        self._model.delete()
+            self._result = AsyncResult(request.GET['id'])
+            if not self._result.ready():
+                raise RuntimeError('Task is not ready.')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['metrics'] = self._result.get()
         return context

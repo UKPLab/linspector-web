@@ -1,92 +1,55 @@
-{% extends 'inspector/base.html' %}
+{% extends 'inspector/form_base.html' %}
 
 {% block content %}
 <div class="content px-5">
   <div class="row justify-content-md-center">
-    <div class="col-md-8 mb-4">
-      <div id="polar"></div>
+    <div class="col-md-8 my-4">
+      <div class="progress">
+        <div class="progress-bar progress-bar-striped" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+      </div>
     </div>
   </div>
-  <div class="row justify-content-md-center">
-    <div class="col-md-8">
-      <table class="table table-hover">
-        <thead>
-          <tr>
-            <th scope="col">Probing Task</th>
-            <th scope="col">Accuracy</th>
-            <th scope="col">Loss</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for probing_task, metric in metrics.items %}
-          <tr>
-            <th scope="row">{{ probing_task }}</th>
-            <td>{{ metric.accuracy|floatformat:3 }}</td>
-            <td>{{ metric.loss|floatformat:3 }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+  <div class="row">
+    <div class="col-12 my-4 text-center">
+      <button class="btn btn-secondary" type="button" disabled>
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        Probing
+      </button>
     </div>
   </div>
-  <div class="row text-center">
-    <div class="col-12 mt-5">
-      <a class="btn btn-secondary" href="/language/">Try Another Model</a>
-    </div>
-  </div>
-</div>
 {% endblock %}
 
 {% block javascript %}
-<script src="https://code.highcharts.com/highcharts.src.js"></script>
-<script src="https://code.highcharts.com/highcharts-more.src.js"></script>
-{% comment 'Use static resources in production instead of CDN' %}
-{% load static %}
-<script src="{% static 'inspector/highcharts/highcharts.src.js' %}"></script>
-<script src="{% static 'inspector/highcharts/highcharts-more.src.js' %}"></script>
-{% endcomment %}
 <script>
-Highcharts.chart('polar', {
-  chart: {
-    polar: true,
-    type: 'area'
-  },
-  colors: ['#007bff', '#28a745', '#dc3545', '#ffc107', '#17a2b8'],
-  exporting: {
-    buttons: {
-      contextButton: {
-        enabled: false
+var progress = document.getElementsByClassName('progress-bar-striped')[0];
+function setProgress() {
+  fetch(window.location.pathname + '?id={{ task_id }}', {headers: {'X-Requested-With': 'XMLHttpRequest'}}).then(function(response) {
+    response.json().then(function(data) {
+      switch (data.state) {
+        case 'PROGRESS':
+          progress.style.width = 100 * data.info.progress + '%';
+          progress.ariaValueNow = 100 * data.info.progress;
+          progress.innerHTML = data.info.task;
+          break;
+        case 'SUCCESS':
+          progress.style.width = '100%';
+          progress.ariaValueNow = 100;
+          progress.innerHTML = 'Done';
+          // Redirect to success url
+          window.location = data.url;
+          break;
+        case 'FAILURE':
+          progress.innerHTML = 'Error';
+          return;
       }
-    }
-  },
-  title: {
-    text: null
-  },
-  xAxis: {
-    categories: [
-    {% for probing_task, _ in metrics.items %}
-    '{{ probing_task }}'{% if not forloop.last %}, {% endif %}
-    {% endfor %}
-    ],
-    tickmarkPlacement: 'on'
-  },
-  yAxis: {
-    min: 0,
-    max: 1,
-    tickAmount: 5
-  },
-  legend: {
-    enabled: false
-  },
-  series: [{
-    name: 'Accuracy',
-    data: [
-    {% for _, metric in metrics.items %}
-    {{ metric.accuracy|floatformat:3 }}{% if not forloop.last %}, {% endif %}
-    {% endfor %}
-    ],
-    pointPlacement: 'on'
-  }]
-});
+      if (parseInt(data.info.progress) < 1) {
+        setTimeout(setProgress, 600);
+      }
+    });
+  }).catch(function(error) {
+    console.log(error);
+  });
+}
+setProgress();
 </script>
 {% endblock %}
