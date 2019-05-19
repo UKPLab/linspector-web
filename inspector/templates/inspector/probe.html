@@ -26,11 +26,6 @@ function setProgress() {
   fetch(window.location.pathname + '?id={{ task_id }}', {headers: {'X-Requested-With': 'XMLHttpRequest'}}).then(function(response) {
     response.json().then(function(data) {
       switch (data.state) {
-        case 'PROGRESS':
-          progress.style.width = 100 * data.info.progress + '%';
-          progress.ariaValueNow = 100 * data.info.progress;
-          progress.innerHTML = data.info.task;
-          break;
         case 'SUCCESS':
           progress.style.width = '100%';
           progress.ariaValueNow = 100;
@@ -40,14 +35,19 @@ function setProgress() {
           break;
         case 'FAILURE':
           progress.innerHTML = 'Error';
-          return;
-      }
-      if (parseInt(data.info.progress) < 1) {
-        setTimeout(setProgress, 600);
+          break;
+        case 'PROGRESS':
+          progress.style.width = 100 * data.info.progress + '%';
+          progress.ariaValueNow = 100 * data.info.progress;
+          progress.innerHTML = data.info.task;
+          // Fall through
+        default:
+          setTimeout(setProgress, 600);
       }
     });
   }).catch(function(error) {
     console.log(error);
+    progress.innerHTML = 'Error';
   });
 }
 setProgress();
