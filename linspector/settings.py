@@ -32,7 +32,6 @@ ALLOWED_HOSTS = ['localhost', 'linspector.ukp.informatik.tu-darmstadt.de']
 
 INSTALLED_APPS = [
     'inspector.apps.InspectorConfig',
-    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -40,6 +39,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_celery_results',
 ]
+
+if DEBUG:
+    INSTALLED_APPS.append('django.contrib.admin')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
