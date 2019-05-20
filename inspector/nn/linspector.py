@@ -19,6 +19,8 @@ from .models.contrastive_linear import ContrastiveLinear
 from .models.linspector_linear import LinspectorLinear
 from .training.linspector_trainer import LinspectorTrainer
 
+from math import floor
+
 import numpy as np
 
 import shutil
@@ -133,6 +135,7 @@ class LinspectorArchiveModel(Linspector):
             embedding.copy_(input[0].data)
         handle = module.register_forward_hook(hook)
         vocab_size = len(vocab)
+        callback_frequency = floor(vocab_size / 30)
         with NamedTemporaryFile(mode='w', suffix='.vec', delete=False) as embeddings_file:
             with torch.no_grad():
                 for idx, instance in enumerate(vocab):
@@ -140,9 +143,16 @@ class LinspectorArchiveModel(Linspector):
                     self.model.forward_on_instance(instance)
                     # Write token and embedding to file
                     embeddings_file.write('{} {}\n'.format(token, ' '.join(map(str, embedding.numpy().tolist()[0][0]))))
-                    for callback in self._callbacks:
-                        # Fill first half of progress with embedding callback
-                        callback(0.5 / vocab_size * idx)
+                    # Limit to max 30 callbacks to increase performance
+                    # Each callback requires expensive database operations
+                    # Progress accuracy is negligible
+                    if idx % callback_frequency == 0:
+                        for callback in self._callbacks:
+                            # Fill first half of progress with embedding callback
+                            callback(0.5 / vocab_size * idx)
+        # Do a final callback
+        for callback in self._callbacks:
+            callback(0.5)
         handle.remove()
         return embeddings_file.name
 
