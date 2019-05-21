@@ -1,12 +1,19 @@
 from allennlp.models.archival import load_archive
 
+import ast
+
 from celery.result import AsyncResult
 
 from django.core.exceptions import SuspiciousOperation
 from django.core.files.storage import FileSystemStorage
 from django.http import JsonResponse
+from django.utils import timezone
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
+
+from django_celery_results.models import TaskResult
+
+import json
 
 import os
 
@@ -208,11 +215,15 @@ class ShowResultView(TemplateView):
         if 'id' not in request.GET:
             raise SuspiciousOperation('`id` parameter is missing.')
         else:
-            self._result = AsyncResult(request.GET['id'])
-            if not self._result.ready():
+            self._result = TaskResult.objects.get(task_id=request.GET['id'])
+            if self._result.status != 'SUCCESS':
                 raise RuntimeError('Task is not ready.')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['metrics'] = self._result.get()
+        context['metrics'] = json.loads(self._result.result)
+        args = ast.literal_eval(self._result.task_args)
+        language = Language.objects.get(pk=args[0])
+        context['language'] = language.name
+        context['date'] = self._result.date_done
         return context

@@ -3,9 +3,13 @@
 {% block content %}
 <div class="content px-5">
   <div class="row justify-content-md-center mb-4">
-    <div class="col-md-8">
+    <figure class="figure col-md-8">
       <div id="polar"></div>
-    </div>
+      <figcaption class="figure-caption">
+        {% load tz %}
+        {{ language}} model probed on {{ date|localtime|date:"j. M Y g:i A e" }}
+      </figcaption>
+    </figure>
   </div>
   <div class="row justify-content-md-center mb-4">
     <div class="col-md-8">
