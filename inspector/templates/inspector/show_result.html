@@ -57,6 +57,13 @@
 <script src="{% static 'inspector/highcharts/highcharts-more.src.js' %}"></script>
 {% endcomment %}
 <script>
+Highcharts.setOptions({
+  chart: {
+    style: {
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"'
+    }
+  }
+})
 Highcharts.chart('polar', {
   chart: {
     polar: true,
@@ -70,6 +77,11 @@ Highcharts.chart('polar', {
       }
     }
   },
+  credits: {
+    style: {
+      color: '#6c757d'
+    }
+  },
   title: {
     text: null
   },
@@ -79,6 +91,11 @@ Highcharts.chart('polar', {
     '{{ probing_task }}'{% if not forloop.last %}, {% endif %}
     {% endfor %}
     ],
+    labels: {
+      style: {
+        color: '#212529'
+      }
+    },
     tickmarkPlacement: 'on'
   },
   yAxis: {
@@ -97,7 +114,13 @@ Highcharts.chart('polar', {
     {% endfor %}
     ],
     pointPlacement: 'on'
-  }]
+  }],
+  tooltip: {
+    backgroundColor: '#f8f9fa',
+    style: {
+      color: '#212529'
+    }
+  }
 });
 var share = document.getElementById('share');
 var button = document.getElementsByClassName('btn-primary')[0];
