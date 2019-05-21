@@ -7,7 +7,7 @@
       <div id="polar"></div>
       <figcaption class="figure-caption">
         {% load tz %}
-        {{ language}} model probed on {{ date|localtime|date:"j. M Y g:i A e" }}
+        {{ language}} model probed on {{ date|localtime|date:"j. M Y g:i A e" }}.
       </figcaption>
     </figure>
   </div>
@@ -143,6 +143,16 @@ button.onclick = function(e) {
     // Copy to clipboard
     share.select();
     document.execCommand('copy');
+  }
+  // Iterate through colors with every click
+  if (button.classList.contains('btn-primary')) {
+    button.classList.replace('btn-primary', 'btn-success');
+  } else if (button.classList.contains('btn-success')) {
+    button.classList.replace('btn-success', 'btn-danger');
+  } else if (button.classList.contains('btn-danger')) {
+    button.classList.replace('btn-danger', 'btn-warning');
+  } else if (button.classList.contains('btn-warning')) {
+    button.classList.replace('btn-warning', 'btn-primary');
   }
 }
 </script>
