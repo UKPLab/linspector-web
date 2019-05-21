@@ -25,7 +25,7 @@ class IntrinsicDatasetReader(DatasetReader):
         for source in ['train.txt', 'dev.txt', 'test.txt']:
             with open(os.path.join(base_path, source)) as data:
                 for line in data:
-                    split = line.strip().split('\t')
+                    split = line.strip().split()
                     # Lowercase tokens
                     vocab.add(split[0].lower())
                     if self.contrastive:

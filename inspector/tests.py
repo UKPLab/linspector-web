@@ -145,7 +145,7 @@ class LinspectorStaticEmbeddingsTests(TestCase):
     def setUp(self):
         self.embeddings_file = os.path.join(settings.MEDIA_ROOT, 'static.vec')
 
-    @tag('fast')
+    @tag('fast', 'static')
     def test_embeddings_file(self):
         self.assertTrue(os.path.isfile(self.embeddings_file))
 

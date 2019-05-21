@@ -55,10 +55,9 @@ class Linspector(ABC):
 
     def _get_embedding_dim(self, embeddings_file):
         with open(embeddings_file, mode='r') as file:
-            line = file.readline().rstrip()
-            index = line.index(' ') + 1
-            vector = np.array(line[index:].replace('  ', ' ').split(' '))
-            return vector.size
+            split = file.readline().strip().split()
+            vector = split[1:]
+            return len(vector)
 
     def probe(self):
         metrics = dict()
@@ -163,6 +162,29 @@ class LinspectorStaticEmbeddings(Linspector):
         self.embeddings_file = embeddings_file
 
     def _get_embeddings_from_model(self):
-        embeddings_file = NamedTemporaryFile(suffix='.vec', delete=False)
-        shutil.copy2(self.embeddings_file, embeddings_file.name)
+        with NamedTemporaryFile(mode='w', suffix='.vec', delete=False) as embeddings_file:
+            with open(self.embeddings_file) as data:
+                file_size = sum(1 for line in data)
+                callback_frequency = floor(file_size / 30)
+                data.seek(0)
+                for idx, line in enumerate(data):
+                    split = line.strip().split()
+                    if len(split) > 1:
+                        # Lowercase tokens
+                        token = split[0].lower()
+                        embedding = split[1:]
+                        # Discard non alphabetic tokens
+                        if token.isalpha():
+                            # Write token and embedding to file
+                            embeddings_file.write('{} {}\n'.format(token, ' '.join(embedding)))
+                    # Limit to max 30 callbacks to increase performance
+                    # Each callback requires expensive database operations
+                    # Progress accuracy is negligible
+                    if idx % callback_frequency == 0:
+                        for callback in self._callbacks:
+                            # Fill first half of progress with embedding callback
+                            callback(0.5 / file_size * idx)
+        # Do a final callback
+        for callback in self._callbacks:
+            callback(0.5)
         return embeddings_file.name
