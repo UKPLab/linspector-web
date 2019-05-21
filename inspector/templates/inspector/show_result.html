@@ -2,12 +2,12 @@
 
 {% block content %}
 <div class="content px-5">
-  <div class="row justify-content-md-center">
-    <div class="col-md-8 mb-4">
+  <div class="row justify-content-md-center mb-4">
+    <div class="col-md-8">
       <div id="polar"></div>
     </div>
   </div>
-  <div class="row justify-content-md-center">
+  <div class="row justify-content-md-center mb-4">
     <div class="col-md-8">
       <table class="table table-hover">
         <thead>
@@ -29,8 +29,19 @@
       </table>
     </div>
   </div>
-  <div class="row text-center">
-    <div class="col-12 mt-5">
+  <div class="row justify-content-md-center">
+    <div class="jumbotron col-md-8">
+      <h2>Share Results</h2>
+      <p class="lead">Share or save the link to your results.</p>
+      <hr class="my-4">
+      <div class="form-row mb-4">
+        <div class="col-8">
+          <input type="text" class="form-control" id="share" value="{{ request.build_absolute_uri }}" readonly>
+        </div>
+        <div class="col-4">
+          <a class="btn btn-primary" href="#">Copy to Clipboard</a>
+        </div>
+      </div>
       <a class="btn btn-secondary" href="/language/">Try Another Model</a>
     </div>
   </div>
@@ -88,5 +99,24 @@ Highcharts.chart('polar', {
     pointPlacement: 'on'
   }]
 });
+var share = document.getElementById('share');
+var button = document.getElementsByClassName('btn-primary')[0];
+if (navigator.share) {
+  button.innerHTML = 'Share';
+}
+button.onclick = function(e) {
+  e.preventDefault();
+  if (navigator.share) {
+    // If available use native share sheet
+    navigator.share({
+      title: document.title,
+      url: share.value
+    })
+  } else {
+    // Copy to clipboard
+    share.select();
+    document.execCommand('copy');
+  }
+}
 </script>
 {% endblock %}
