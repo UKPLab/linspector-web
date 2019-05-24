@@ -26,8 +26,12 @@
   <section id="content" class="my-4">
     {% block content %}{% endblock %}
   </section>
-  <footer>
+  <footer class="py-3 text-center">
     {% block footer %}
+    <ul class="list-inline">
+      <li class="list-inline-item"><a href="https://www.informatik.tu-darmstadt.de/ukp/impressum.en.jsp">Legal Note</li>
+      <li class="list-inline-item"><a href="https://www.tu-darmstadt.de/datenschutzerklaerung.en.jsp">Privacy Policy</li>
+    </ul>
     {% endblock %}
   </footer>
   {% block javascript %}{% endblock %}
