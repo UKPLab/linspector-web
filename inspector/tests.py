@@ -5,8 +5,8 @@ from allennlp.models.archival import load_archive
 from allennlp.modules import Embedding
 from allennlp.training.trainer import Trainer
 
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.conf import settings
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import tag, TestCase
 
 import json
@@ -24,6 +24,35 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 import torch
 import torch.optim as optim
+
+class IntrinsicDataTest(TestCase):
+
+    fixtures = ['languages', 'probing_tasks']
+
+    @tag('fast', 'core', 'fixtures')
+    def test_intrinsic_data_for_fixture(self):
+        files = ['train.txt', 'dev.txt', 'test.txt']
+        languages = Language.objects.all()
+        for language in languages:
+            probing_tasks = ProbingTask.objects.filter(languages__code=language.code)
+            for probing_task in probing_tasks:
+                for file in files:
+                    path = os.path.join(settings.MEDIA_ROOT, 'intrinsic_data', probing_task.to_camel_case(), language.code, file)
+                    self.assertTrue(os.path.isfile(path), msg=path)
+
+    @tag('fast', 'core', 'fixtures')
+    def test_fixture_for_intrinsic_data(self):
+        path = os.path.join(settings.MEDIA_ROOT, 'intrinsic_data')
+        # Map from probing task directory format (camel case) to id
+        map = {probing_task.to_camel_case(): probing_task.id for probing_task in ProbingTask.objects.all()}
+        with os.scandir(path) as probing_tasks:
+            for probing_task in probing_tasks:
+                if probing_task.is_dir():
+                    self.assertTrue(probing_task.name in map, msg=probing_task.path)
+                    with os.scandir(probing_task.path) as languages:
+                        for language in languages:
+                            if language.is_dir():
+                                self.assertTrue(ProbingTask.objects.filter(languages__code=language.name, id=map[probing_task.name]).exists(), msg=language.path)
 
 class LinspectorTest(TestCase):
 
