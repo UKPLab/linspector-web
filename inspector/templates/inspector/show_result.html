@@ -1,19 +1,19 @@
 {% extends 'inspector/base.html' %}
 
 {% block content %}
-<div class="content px-5">
+<div class="content mt-4 p-4">
   <div class="row justify-content-md-center mb-4">
     <figure class="figure col-md-8">
       <div id="polar"></div>
-      <figcaption class="figure-caption">
-        {% load tz %}
-        {{ language}} model probed on {{ date|localtime|date:"j. M Y g:i A e" }}.
-      </figcaption>
     </figure>
   </div>
   <div class="row justify-content-md-center mb-4">
     <div class="col-md-8">
-      <table class="table table-hover">
+      <table class="table">
+        <caption class="text-center">
+          {% load tz %}
+          {{ language}} model probed on {{ date|localtime|date:"j. M Y g:i A e" }}.
+        </caption>
         <thead>
           <tr>
             <th scope="col">Probing Task</th>
@@ -34,7 +34,7 @@
     </div>
   </div>
   <div class="row justify-content-md-center">
-    <div class="jumbotron col-md-8">
+    <div class="jumbotron bg-light border shadow-sm col-md-8">
       <h2>Share Results</h2>
       <p class="lead">Share or save the link to your results.</p>
       <hr class="my-4">

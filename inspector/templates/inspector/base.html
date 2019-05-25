@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-100">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -7,20 +7,20 @@
   {% load static %}
   <link rel="stylesheet" type="text/css" href="{% static 'inspector/custom.css' %}">
 </head>
-<body>
+<body class="d-flex flex-column h-100">
   <header>
     <nav class="navbar navbar-expand navbar-dark bg-primary">
       <a class="navbar-brand" href="/">LINSPECTOR</a>
       <a class="btn btn-outline-light ml-auto" href="https://github.com/maexe/linspector-server" role="button">GitHub</a>
     </nav>
   </header>
-  <section id="content" class="my-4">
+  <main class="flex-shrink-0">
     {% block content %}{% endblock %}
-  </section>
-  <footer class="py-3 text-center">
-    <ul class="list-inline">
-      <li class="list-inline-item"><a href="https://www.informatik.tu-darmstadt.de/ukp/impressum.en.jsp">Legal Note</li>
-      <li class="list-inline-item"><a href="https://www.tu-darmstadt.de/datenschutzerklaerung.en.jsp">Privacy Policy</li>
+  </main>
+  <footer class="bg-light mt-auto py-3 text-center">
+    <ul class="list-inline py-0 my-0">
+      <li class="list-inline-item"><a href="https://www.informatik.tu-darmstadt.de/ukp/impressum.en.jsp">Legal Note</a></li>
+      <li class="list-inline-item"><a href="https://www.tu-darmstadt.de/datenschutzerklaerung.en.jsp">Privacy Policy</a></li>
     </ul>
   </footer>
   {% block javascript %}{% endblock %}

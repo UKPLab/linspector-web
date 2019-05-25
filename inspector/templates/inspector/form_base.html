@@ -1,7 +1,7 @@
 {% extends 'inspector/base.html' %}
 
 {% block content %}
-<div class="content px-5">
+<div class="content mt-4 p-4">
   {% if form.errors %}
   {% for error in form.non_field_errors %}
   <div class="row justify-content-sm-center">
@@ -22,7 +22,7 @@
   {% endif %}
   <div class="row justify-content-sm-center">
     <div class="col-sm-6 col-md-5">
-      <div class="card bg-light">
+      <div class="card bg-light shadow-sm">
         {% block form %}{% endblock %}
       </div>
     </div>
