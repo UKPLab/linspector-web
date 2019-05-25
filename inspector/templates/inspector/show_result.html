@@ -17,16 +17,17 @@
         <thead>
           <tr>
             <th scope="col">Probing Task</th>
-            <th scope="col">Accuracy</th>
-            <th scope="col">Loss</th>
+            <th class="text-right" scope="col">Accuracy</th>
+            <th class="text-right" scope="col">Loss</th>
           </tr>
         </thead>
         <tbody>
+          {% load percentage %}
           {% for probing_task, metric in metrics.items %}
           <tr>
             <th scope="row">{{ probing_task }}</th>
-            <td>{{ metric.accuracy|floatformat:3 }}</td>
-            <td>{{ metric.loss|floatformat:3 }}</td>
+            <td class="text-right">{{ metric.accuracy|percentage }} %</td>
+            <td class="text-right">{{ metric.loss|floatformat:1 }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -107,7 +108,7 @@ Highcharts.chart('polar', {
   },
   yAxis: {
     min: 0,
-    max: 1,
+    max: 100,
     gridLineColor: '#dee2e6',
     minorGridLineColor: '#dee2e6',
     tickAmount: 5
@@ -119,7 +120,7 @@ Highcharts.chart('polar', {
     name: 'Accuracy',
     data: [
     {% for _, metric in metrics.items %}
-    {{ metric.accuracy|floatformat:3 }}{% if not forloop.last %}, {% endif %}
+    {{ metric.accuracy|percentage }}{% if not forloop.last %}, {% endif %}
     {% endfor %}
     ],
     pointPlacement: 'on'
@@ -128,7 +129,9 @@ Highcharts.chart('polar', {
     backgroundColor: '#f8f9fa',
     style: {
       color: '#212529'
-    }
+    },
+    valueDecimals: 1,
+    valueSuffix: ' %'
   }
 });
 var share = document.getElementById('share');
