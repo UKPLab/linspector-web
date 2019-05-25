@@ -122,9 +122,12 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-linspectorenv/
 bootstrap/
 highcharts/
+*.css
+linspectorenv/
 media/
-admin/
+node_modules/
+/static
 .DS_Store
+package-lock.json

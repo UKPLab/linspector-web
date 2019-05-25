@@ -4,6 +4,7 @@ import ast
 
 from celery.result import AsyncResult
 
+from django.conf import settings
 from django.core.exceptions import SuspiciousOperation
 from django.core.files.storage import FileSystemStorage
 from django.http import JsonResponse
@@ -226,4 +227,5 @@ class ShowResultView(TemplateView):
         language = Language.objects.get(pk=args[0])
         context['language'] = language.name
         context['date'] = self._result.date_done
+        context['debug'] = settings.DEBUG
         return context

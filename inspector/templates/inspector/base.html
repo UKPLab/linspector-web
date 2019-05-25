@@ -4,35 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <title>{% block title %}LINSPECTOR{% endblock %}</title>
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-  {% comment 'Use static resources in production instead of CDN' %}
   {% load static %}
-  <link rel="stylesheet" type="text/css" href="{% static 'inspector/bootstrap/css/bootstrap.min.css' %}">
-  <link rel="stylesheet" type="text/css" href="{% static 'inspector/bootstrap/css/bootstrap-grid.min.css' %}">
-  {% endcomment %}
+  <link rel="stylesheet" type="text/css" href="{% static 'inspector/custom.css' %}">
 </head>
 <body>
-  <header class="my-4">
-    {% block header %}
-    <div class="container">
-      <div class="row text-center">
-        <div class="col-12">
-          <h1>LINSPECTOR</h1>
-        </div>
-      </div>
-    </div>
-    {% endblock %}
+  <header>
+    <nav class="navbar navbar-expand navbar-dark bg-primary">
+      <a class="navbar-brand" href="/">LINSPECTOR</a>
+      <a class="btn btn-outline-light ml-auto" href="https://github.com/maexe/linspector-server" role="button">GitHub</a>
+    </nav>
   </header>
   <section id="content" class="my-4">
     {% block content %}{% endblock %}
   </section>
   <footer class="py-3 text-center">
-    {% block footer %}
     <ul class="list-inline">
       <li class="list-inline-item"><a href="https://www.informatik.tu-darmstadt.de/ukp/impressum.en.jsp">Legal Note</li>
       <li class="list-inline-item"><a href="https://www.tu-darmstadt.de/datenschutzerklaerung.en.jsp">Privacy Policy</li>
     </ul>
-    {% endblock %}
   </footer>
   {% block javascript %}{% endblock %}
 </body>

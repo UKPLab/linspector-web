@@ -53,13 +53,15 @@
 {% endblock %}
 
 {% block javascript %}
+{% if debug %}
 <script src="https://code.highcharts.com/highcharts.src.js"></script>
 <script src="https://code.highcharts.com/highcharts-more.src.js"></script>
-{% comment 'Use static resources in production instead of CDN' %}
+{# 'Use static resources in production instead of CDN' #}
+{% else %}
 {% load static %}
 <script src="{% static 'inspector/highcharts/highcharts.src.js' %}"></script>
 <script src="{% static 'inspector/highcharts/highcharts-more.src.js' %}"></script>
-{% endcomment %}
+{% endif %}
 <script>
 Highcharts.setOptions({
   chart: {
@@ -73,7 +75,7 @@ Highcharts.chart('polar', {
     polar: true,
     type: 'area'
   },
-  colors: ['#007bff', '#28a745', '#dc3545', '#ffc107', '#17a2b8'],
+  colors: ['#b90f22', '#d7ac00', '#00689d', '#7fab16'],
   exporting: {
     buttons: {
       contextButton: {
@@ -95,6 +97,7 @@ Highcharts.chart('polar', {
     '{{ probing_task }}'{% if not forloop.last %}, {% endif %}
     {% endfor %}
     ],
+    lineColor: '#6c757d',
     labels: {
       style: {
         color: '#212529'
@@ -105,6 +108,8 @@ Highcharts.chart('polar', {
   yAxis: {
     min: 0,
     max: 1,
+    gridLineColor: '#dee2e6',
+    minorGridLineColor: '#dee2e6',
     tickAmount: 5
   },
   legend: {
@@ -146,13 +151,13 @@ button.onclick = function(e) {
   }
   // Iterate through colors with every click
   if (button.classList.contains('btn-primary')) {
-    button.classList.replace('btn-primary', 'btn-success');
-  } else if (button.classList.contains('btn-success')) {
-    button.classList.replace('btn-success', 'btn-danger');
-  } else if (button.classList.contains('btn-danger')) {
-    button.classList.replace('btn-danger', 'btn-warning');
+    button.classList.replace('btn-primary', 'btn-warning');
   } else if (button.classList.contains('btn-warning')) {
-    button.classList.replace('btn-warning', 'btn-primary');
+    button.classList.replace('btn-warning', 'btn-info');
+  } else if (button.classList.contains('btn-info')) {
+    button.classList.replace('btn-info', 'btn-success');
+  } else if (button.classList.contains('btn-success')) {
+    button.classList.replace('btn-success', 'btn-primary');
   }
 }
 </script>
