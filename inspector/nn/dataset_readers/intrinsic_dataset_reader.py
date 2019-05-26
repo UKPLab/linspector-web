@@ -7,6 +7,7 @@ from allennlp.data.tokenizers import Token
 import os
 
 class IntrinsicDatasetReader(DatasetReader):
+    """Reads tokens from intrinsic train, dev, and test data while ignoring labels."""
 
     def __init__(self, field_key, contrastive = False):
         super().__init__(lazy=False)

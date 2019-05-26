@@ -9,6 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class LinspectorLinear(Model):
+    """Simple linear classifier to probe word embeddings."""
 
     def __init__(self, word_embeddings, vocab):
         super().__init__(vocab)

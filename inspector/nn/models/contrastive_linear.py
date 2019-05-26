@@ -7,6 +7,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class ContrastiveLinear(LinspectorLinear):
+    """Simple linear classifier to probe word embeddings with a contrastive task.
+
+    A contrastive probing task takes two tokens and tries to predict a shared label.
+    """
 
     def __init__(self, word_embeddings, vocab):
         super().__init__(word_embeddings, vocab)

@@ -1,6 +1,7 @@
 from allennlp.training.trainer import Trainer
 
 class LinspectorTrainer(Trainer):
+    """Extension of allennlp.training.trainer.Trainer with the ability to subscribe to epoch progress."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

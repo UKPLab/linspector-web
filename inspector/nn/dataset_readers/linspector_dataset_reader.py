@@ -5,6 +5,7 @@ from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.data.tokenizers import Token
 
 class LinspectorDatasetReader(DatasetReader):
+    """Simple reader for intrinsic data."""
 
     def __init__(self):
         super().__init__(lazy=False)

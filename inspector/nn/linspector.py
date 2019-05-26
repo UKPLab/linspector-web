@@ -32,6 +32,12 @@ import torch.nn as nn
 import torch.optim as optim
 
 class Linspector(ABC):
+    """Abstract base class for probing embeddings.
+
+    Attributes:
+        language: A Language model specifying the embedding language.
+        probing_tasks: A ProbingTask model specifying the probing task and classifier type.
+    """
 
     def __init__(self, language, probing_task):
         self.language = language
@@ -39,6 +45,11 @@ class Linspector(ABC):
         self._callbacks = []
 
     def _get_intrinsic_data(self):
+        """Returns intrinsic data for the current probing task and language.
+
+        Returns:
+            A tuple containing iterables for train, dev, and test data.
+        """
         base_path = os.path.join(settings.MEDIA_ROOT, 'intrinsic_data', self.probing_task.to_camel_case(), self.language.code)
         if self.probing_task.contrastive:
             reader = ContrastiveDatasetReader()
@@ -51,15 +62,39 @@ class Linspector(ABC):
         return train, dev, test
 
     def _get_embeddings_from_model(self):
+        """Retrieves embeddings and writes them to a NamedTemporaryFile.
+
+        Returns:
+            A path as a str to the NamedTemporaryFile embeddings file. The embeddings file should contain a lowercased token followed by a vector separated by whitespace. For example:
+
+            katapultiert 0.019 -0.29 -0.34 0.076 ...
+            rutsch 0.019 -0.29 -0.34 0.076 ...
+            ...
+        """
         raise NotImplementedError
 
     def _get_embedding_dim(self, embeddings_file):
+        """Get the embedding dimension from an embeddings file.
+
+        Args:
+            embeddings_file: Path as str to an embeddings file.
+
+        Returns:
+            Embedding dimension as an int.
+        """
         with open(embeddings_file, mode='r') as file:
             split = file.readline().strip().split()
             vector = split[1:]
             return len(vector)
 
     def probe(self):
+        """Probes an embeddings file and returns its metrics.
+
+        Trains a linear model using embeddings from _get_embeddings_from_model() as a pretrained embeddings layer and intrinsic data for the current probing task.
+
+        Returns:
+            A dict containing metrics from allennlp.training.util.evaluate.
+        """
         metrics = dict()
         train, dev, test = self._get_intrinsic_data()
         # Add test data to vocabulary else evaluation will be unstable
@@ -93,14 +128,24 @@ class Linspector(ABC):
         return metrics
 
     def subscribe(self, callback):
-        """
-        Subscribe with callback to get progress [0, 1] during probing.
+        """Subscribe with callback to get progress [0, 1] during probing.
 
         Early stopping will return a value < 1.
+
+        Args:
+            callback: A function taking an float between 0 and 1 as input.
         """
         self._callbacks.append(callback)
 
 class LinspectorArchiveModel(Linspector):
+    """Probes AllenNLP models.
+
+    Attributes:
+        language: A Language model specifying the embedding language.
+        probing_tasks: A ProbingTask model specifying the probing task and classifier type.
+        model: An allennlp.models.model to probe. The model has to be a vanilla AllenNLP model. Custom models are not supported.
+        layer: Index of probing layer.
+    """
 
     def __init__(self, language, probing_task, model):
         super().__init__(language, probing_task)
@@ -109,6 +154,11 @@ class LinspectorArchiveModel(Linspector):
         self.layer = 0
 
     def get_layers(self):
+        """Returns a list of layers available for probing.
+
+        Returns:
+            A list of tuples containing an index and the layer name.
+        """
         layers = list()
         if isinstance(self.model, SimpleTagger):
             encoder = self.model.encoder._module
@@ -156,6 +206,17 @@ class LinspectorArchiveModel(Linspector):
         return embeddings_file.name
 
 class LinspectorStaticEmbeddings(Linspector):
+    """Probes static embedding files.
+
+    Attributes:
+        language: A Language model specifying the embedding language.
+        probing_tasks: A ProbingTask model specifying the probing task and classifier type.
+        embeddings_file: Path as str to an embeddings file. The file should contain a token followed by a vector separated by whitespace. For example:
+
+            katapultiert 0.019 -0.29 -0.34 0.076 ...
+            rutsch 0.019 -0.29 -0.34 0.076 ...
+            ...
+    """
 
     def __init__(self, language, probing_task, embeddings_file):
         super().__init__(language, probing_task)

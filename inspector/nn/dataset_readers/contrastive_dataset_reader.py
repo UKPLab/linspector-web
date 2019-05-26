@@ -5,6 +5,7 @@ from allennlp.data.tokenizers import Token
 from .linspector_dataset_reader import LinspectorDatasetReader
 
 class ContrastiveDatasetReader(LinspectorDatasetReader):
+    """Simple reader for contrastive intrinsic data."""
 
     def text_to_instance(self, first_token, second_token, label = None):
         first_token_field = TextField(first_token, self.token_indexers)
