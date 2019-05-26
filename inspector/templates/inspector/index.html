@@ -2,10 +2,12 @@
 
 {% block content %}
 <div class="jumbotron bg-light text-center">
-  <h1 class="display-4">LINSPECTOR</h1>
-  <p class="lead">Language Inspector</p>
-  <p>Some text.</p>
-  <a class="btn btn-primary" href="/language/">Getting Started</a>
+  <div class="container">
+    <h1 class="display-4">LINSPECTOR</h1>
+    <p class="lead">Language Inspector</p>
+    <p>LINSPECTOR is a multilingual inspector to analyze word embeddings. {{ probing_tasks.count }} simple classification tasks called probing tasks inspect a diverse set of {{ languages.count }} languages. You gain quick insights into your word embeddings especially outside of the English language.</p>
+    <a class="btn btn-primary" href="/language/">Getting Started</a>
+  </div>
 </div>
 <div class="content p-4">
   <div class="row">
@@ -23,7 +25,7 @@
     </div>
     <div class="col-sm-4 mb-4">
       <div class="card bg-light shadow-sm">
-        <h5 class="card-header text-center">Languages</h5>
+        <h5 class="card-header text-center">Languages <span class="badge badge-primary">{{ languages.count }}</span></h5>
         <div class="card-body">
           <p class="card-text">Some text.</p>
         </div>
@@ -38,7 +40,7 @@
     </div>
     <div class="col-sm-4 mb-4">
       <div class="card bg-light shadow-sm">
-        <h5 class="card-header text-center">Probing Tasks</h5>
+        <h5 class="card-header text-center">Probing Tasks <span class="badge badge-primary">{{ probing_tasks.count }}</span></h5>
         <div class="card-body">
           <p class="card-text">Some text.</p>
         </div>
