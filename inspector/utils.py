@@ -17,7 +17,7 @@ def get_request_params(request):
                             model = Model.objects.get(id=request.GET['model'])
                             if 'layer' in request.GET:
                                 try:
-                                    layer = int(request.GET['layer'])
+                                    layer = request.GET['layer']
                                     return (language, probing_tasks, model, layer)
                                 except ValueError:
                                     raise SuspiciousOperation('`layer` parameter is invalid.')

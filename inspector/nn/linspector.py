@@ -3,11 +3,16 @@ from abc import ABC
 from allennlp.common.params import Params
 from allennlp.data import Vocabulary
 from allennlp.data.iterators import BasicIterator
-from allennlp.models.simple_tagger import SimpleTagger
 from allennlp.modules import Embedding
+from allennlp.modules.seq2seq_encoders.pytorch_seq2seq_wrapper import PytorchSeq2SeqWrapper
+from allennlp.modules.seq2vec_encoders.pytorch_seq2vec_wrapper import PytorchSeq2VecWrapper
+from allennlp.modules.seq2seq_encoders.seq2seq_encoder import Seq2SeqEncoder
+from allennlp.modules.seq2vec_encoders.seq2vec_encoder import Seq2VecEncoder
 from allennlp.training.util import evaluate
 
 from django.conf import settings
+
+import inspect
 
 import os
 
@@ -144,39 +149,43 @@ class LinspectorArchiveModel(Linspector):
         language: A Language model specifying the embedding language.
         probing_tasks: A ProbingTask model specifying the probing task and classifier type.
         model: An allennlp.models.model to probe. The model has to be a vanilla AllenNLP model. Custom models are not supported.
-        layer: Index of probing layer.
+        layer: Key of probing layer.
     """
 
     def __init__(self, language, probing_task, model):
         super().__init__(language, probing_task)
         self.model = model
-        # Set default probing layer
-        self.layer = 0
+        self.layer = None
 
     def get_layers(self):
         """Returns a list of layers available for probing.
 
         Returns:
-            A list of tuples containing an index and the layer name.
+            A list of tuples containing a dict key and the layer display name.
         """
         layers = list()
-        if isinstance(self.model, SimpleTagger):
-            encoder = self.model.encoder._module
-            modules_as_string = [str(module) for module in encoder.modules()]
-            layers = [(idx, module[:module.index('(')]) for idx, module in enumerate(modules_as_string)]
-        else:
-            raise NotImplementedError
+        for name, module in self.model.named_children():
+            if isinstance(module, PytorchSeq2SeqWrapper) or isinstance(module, PytorchSeq2VecWrapper):
+                # Get name from wrapped class e.g. LSTM
+                layers.append((name, module._module.__class__.__name__))
+            elif isinstance(module, Seq2SeqEncoder) or isinstance(module, Seq2VecEncoder):
+                layers.append((name, name))
         return layers
 
     def _get_embeddings_from_model(self):
         # Get intrinsic data for probing task
-        # Set field_key to 'tokens' for SimpleTagger
-        field_key='tokens'
+        # Set field_key to first argument name of forward method
+        field_key = inspect.getfullargspec(self.model.forward)[0][1]
         reader = IntrinsicDatasetReader(field_key=field_key, contrastive=self.probing_task.contrastive)
         base_path = os.path.join(settings.MEDIA_ROOT, 'intrinsic_data', self.probing_task.to_camel_case(), self.language.code)
         vocab = reader.read(base_path)
         # Select module
-        module = list(self.model.encoder.modules())[self.layer]
+        if self.layer is not None:
+            module = self.model._modules[self.layer]
+        else:
+            # If no layer is specified select the first one
+            layers = self.get_layers()
+            module = self.model._modules[layers[0][0]]
         # Get embeddings for vocab
         embedding = torch.zeros((1, 1, module.get_input_dim()))
         def hook(module, input, output):
