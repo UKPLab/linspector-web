@@ -16,7 +16,7 @@ class Language(Model):
 
 class ProbingTask(Model):
 
-    name = CharField(max_length=20, unique=True)
+    name = CharField(max_length=35, unique=True)
     languages = ManyToManyField(Language)
     contrastive = BooleanField(default=False)
 

@@ -69,14 +69,18 @@ We are using intrinsic data provided by [Şahin et al. (2019)](https://github.co
 - Probing tasks are title cased without spaces
 - Use ISO 639-1 codes for languages
 - Folder names have to match database entries except for the spaces
-- `media/intrinsic_data/CharacterBin/de/ > train.txt, dev.txt, test.txt`
+- `media/intrinsic_data/CaseMarking/de/ > train.txt, dev.txt, test.txt`
 
-Additionally we renamed some task to match the paper:
+Additionally we renamed some task to be more descriptive:
 
 - _Case_ to _Case Marking_
-- _Odd Feat_ to _Odd Feature_
+- _Tag Count_ to _Morphological Feature Count_
+- _Odd Feat_ to _Odd Morphological Feature_
 - _Pseudo_ to _Pseudoword_
-- _Same Feat_ to _Shared Feature_
+- _Same Feat_ to _Shared Morphological Feature_
+- _Character Bin_ to _Word Length_
+
+Also we deleted _Character Count_. It was replaced by _Word Length_.
 
 We have attached our fixtures under `inspector/fixtures/`.
 
