@@ -34,9 +34,13 @@
 <script src="{% static 'inspector/csrf.js' %}"></script>
 <script>
 var form = document.getElementsByTagName('form')[0];
-var file = document.getElementsByName('{{ form.model.name }}')[0];
+var file = document.getElementById('{{ form.model.auto_id }}');
+var label = document.querySelectorAll('label[for="{{ form.model.auto_id }}"]')[0];
 var button = document.getElementsByTagName('button')[0];
 var progress = document.getElementsByClassName('progress-bar-striped')[0];
+file.onchange = function(e) {
+  label.innerHTML = file.files[0].name;
+}
 form.onsubmit = function(e) {
   // If files is empty do synchronous submit
   // Django will handle errors
