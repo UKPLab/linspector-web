@@ -11,12 +11,14 @@ from django.test import tag, TestCase
 
 import json
 
-import os
-
 from .models import Language, Model, ProbingTask
 from .nn.dataset_readers.linspector_dataset_reader import LinspectorDatasetReader
 from .nn.linspector import LinspectorArchiveModel, LinspectorStaticEmbeddings
 from .nn.models.linspector_linear import LinspectorLinear
+
+import os
+
+import random
 
 import subprocess
 
@@ -24,6 +26,8 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 import torch
 import torch.optim as optim
+
+from urllib.request import urlopen
 
 class IntrinsicDataTest(TestCase):
 
@@ -71,117 +75,164 @@ class LinspectorTest(TestCase):
             self.assertTrue(probing_tasks.exists())
 
 class LinspectorArchiveModelTests(TestCase):
+    """Tests AllenNLP archives.
+
+    Test archives for different model types for a diverse set of languages and dimensions.
+
+    Attributes:
+        archives: A list of tuples containing the language code, vector dimension, and a path to an archive. For example:
+
+            [('ar', 50, '.../media/simple_tagger.ar.d50.tar.gz')]
+    """
 
     fixtures = ['languages', 'probing_tasks']
 
     def setUp(self):
-        self.archive_path = os.path.join(settings.MEDIA_ROOT, 'model.tar.gz')
+        self.archives = list()
+        models = ['simple_tagger', 'biaffine_parser'] # TODO: 'crf_tagger', 'esim'
+        # First language in the list should have at least one contrastive and one non contrastive probing task
+        langs = random.shuffle(['ar', 'hy', 'cs', 'fr', 'hu'])
+        dims = random.shuffle([50, 100, 200, 300])
+        for idx, model in enumerate(models):
+            # Select 2 random language + dimension combinations per model
+            for i in range(idx, idx * 2):
+                # Use modulo to start over when the last index is reached
+                lang = langs[i % (len(langs) - 1)]
+                dim = dims[i % (len(dims) - 1)]
+                self.archives.append((lang, dim, os.path.join(settings.MEDIA_ROOT, '{}.{}.d{}.tar.gz'.format(model, lang, dim))))
 
     @tag('fast')
-    def test_archive(self):
-        self.assertTrue(os.path.isfile(self.archive_path))
-        archive = load_archive(self.archive_path)
+    def test_archives(self):
+        for (_, _, archive) in self.archives:
+            self.assertTrue(os.path.isfile(archive[1]), msg=archive[1])
+            load_archive(archive[1])
 
-    @tag('fast')
+    @tag('fast', 'core')
     def test_get_layers(self):
-        archive = load_archive(self.archive_path)
+        archive = load_archive(self.archives[0][2])
         language = Language.objects.all().first()
-        probing_tasks = ProbingTask.objects.filter(languages__code=language.code)
-        linspector = LinspectorArchiveModel(language, probing_tasks.first(), archive.model)
+        probing_task = ProbingTask.objects.filter(languages__code=language.code).first()
+        linspector = LinspectorArchiveModel(language, probing_task, archive.model)
         self.assertGreater(len(linspector.get_layers()), 0)
 
     @tag('core')
-    def test_get_intrinsic_data(self):
-        archive = load_archive(self.archive_path)
-        languages = Language.objects.all()
-        for language in languages:
-            probing_tasks = ProbingTask.objects.filter(languages__code=language.code)
-            for probing_task in probing_tasks:
-                linspector = LinspectorArchiveModel(language, probing_task, archive.model)
-                train, dev, test = linspector._get_intrinsic_data()
-                self.assertGreater(len(train), 0)
-                self.assertGreater(len(dev), 0)
-                self.assertGreater(len(test), 0)
-
-    @tag('slow', 'core')
     def test_embeddings_file(self):
-        archive = load_archive(self.archive_path)
-        languages = Language.objects.all()
-        for language in languages:
-            probing_tasks = ProbingTask.objects.filter(languages__code=language.code)
-            for probing_task in probing_tasks:
-                linspector = LinspectorArchiveModel(language, probing_task, archive.model)
-                embeddings_file = linspector._get_embeddings_from_model()
-                self.assertTrue(os.path.isfile(embeddings_file))
-                self.assertGreater(os.path.getsize(embeddings_file), 0)
-                embedding_dim = linspector._get_embedding_dim(embeddings_file)
-                self.assertGreater(embedding_dim, 0)
-                os.unlink(embeddings_file)
-
-    @tag('slow', 'core', 'nn', 'contrastive')
-    def test_probe(self):
-        archive = load_archive(self.archive_path)
-        languages = Language.objects.all()
-        for language in languages:
-            probing_tasks = ProbingTask.objects.filter(languages__code=language.code)
-            for probing_task in probing_tasks:
-                linspector = LinspectorArchiveModel(language, probing_task, archive.model)
-                metrics = linspector.probe()
-                self.assertTrue(isinstance(metrics['accuracy'], float))
+        for (lang, dim, archive) in self.archives:
+            language = Language.objects.get(code=lang)
+            probing_task = ProbingTask.objects.filter(languages__code=language.code).first()
+            linspector = LinspectorArchiveModel(language, probing_task, archive.model)
+            embeddings_file = linspector._get_embeddings_from_model()
+            self.assertTrue(os.path.isfile(embeddings_file))
+            self.assertGreater(os.path.getsize(embeddings_file), 0)
+            embeddings_dim = linspector._get_embedding_dim(embeddings_file)
+            self.assertEqual(embeddings_dim, dim)
+            os.unlink(embeddings_file)
 
     @tag('core', 'nn')
     def test_classifier(self):
-        archive = load_archive(self.archive_path)
+        archive = load_archive(self.archives[0][2])
+        language = Language.objects.get(code=self.archives[0][0])
         # Exclude contrastive tasks
-        probing_task = ProbingTask.objects.filter(contrastive=False).first()
-        language = probing_task.languages.first()
+        probing_task = ProbingTask.objects.filter(languages__code=language.code, contrastive=False).first()
         linspector = LinspectorArchiveModel(language, probing_task, archive.model)
         metrics = linspector.probe()
         self.assertGreater(metrics['accuracy'], 0)
 
     @tag('core', 'nn', 'contrastive')
     def test_contrastive_classifier(self):
-        archive = load_archive(self.archive_path)
-        # Filter for contrastive tasks
-        probing_task = ProbingTask.objects.filter(contrastive=True).first()
-        language = probing_task.languages.first()
+        archive = load_archive(self.archives[0][2])
+        language = Language.objects.get(code=self.archives[0][0])
+        # Exclude contrastive tasks
+        probing_task = ProbingTask.objects.filter(languages__code=language.code, contrastive=True).first()
         linspector = LinspectorArchiveModel(language, probing_task, archive.model)
         metrics = linspector.probe()
         self.assertGreater(metrics['accuracy'], 0)
 
-    @tag('slow', 'nn', 'stability')
-    def test_accuracy_stability(self):
-        archive = load_archive(self.archive_path)
-        # Get POS for German
-        probing_task = ProbingTask.objects.filter(name='POS').first()
-        language = Language.objects.get(code='de')
-        linspector = LinspectorArchiveModel(language, probing_task, archive.model)
-        max_accuracy = 0.0
-        for i in range(0, 10):
+    @tag('slow', 'nn', 'consistency')
+    def test_accuracy_consistency(self):
+        archive = load_archive(self.archives[0][2])
+        language = Language.objects.get(code=self.archives[0][0])
+        probing_task = ProbingTask.objects.filter(languages__code=language.code).first()
+        accuracy = 0.0
+        for i in range(0, 3):
             metrics = linspector.probe()
-            if max_accuracy > 0:
-                # Check that accuracy does not diverge from max accuracy between iterations (with tolerance)
-                self.assertLess(abs(max_accuracy - metrics['accuracy']), 0.05)
-                max_accuracy = max(max_accuracy, metrics['accuracy'])
+            if accuracy > 0:
+                # Check that accuracy does not diverge between iterations (with tolerance)
+                self.assertLess(abs(accuracy - metrics['accuracy']), 0.01)
+                accuracy = max(accuracy, metrics['accuracy'])
             else:
-                # Set max accuracy to inital value
-                max_accuracy = metrics['accuracy']
+                # Set accuracy to inital value
+                accuracy = metrics['accuracy']
+
+    @tag('slow', 'core', 'nn', 'contrastive')
+    def test_probe_all(self):
+        for (lang, dim, archive) in self.archives:
+            language = Language.objects.get(code=lang)
+            probing_tasks = ProbingTask.objects.filter(languages__code=language.code)
+            for probing_task in probing_tasks:
+                linspector = LinspectorArchiveModel(language, probing_task, archive.model)
+                metrics = linspector.probe()
+                self.assertGreater(metrics['accuracy'], 0)
 
 class LinspectorStaticEmbeddingsTests(TestCase):
+    """Tests static embeddings.
+
+    Loads pretrained fastText embeddings for a diverse set of languages and dimensions.
+
+    Attributes:
+        files: A list of tuples containing the language code and a path to an embeddings file. For example:
+
+            [('ar', '.../media/fasttext.ar.vec')]
+    """
 
     fixtures = ['languages', 'probing_tasks']
 
     def setUp(self):
-        self.embeddings_file = os.path.join(settings.MEDIA_ROOT, 'static.vec')
+        self.files = list()
+        langs = ['ar', 'hy', 'cs', 'fr', 'hu']
+        for lang in langs:
+            path = os.path.join(settings.MEDIA_ROOT, 'fasttext.{}.vec'.format(lang))
+            # Check if file already exists
+            if not os.path.isfile(path):
+                response = urlopen('https://dl.fbaipublicfiles.com/fasttext/vectors-wiki/wiki.{}.vec'.format(lang))
+                with open(path, 'wb+') as file:
+                    while True:
+                        chunk = response.read(16 * 1024)
+                        if chunk:
+                            file.write(chunk)
+                        else:
+                            break
+            self.files.append((lang, path))
 
-    @tag('fast', 'static')
+    @tag('core', 'static')
+    def test_get_embedding_dim(self):
+        for (lang, fasttext) in self.files:
+            language = Language.objects.get(code=lang)
+            probing_task = ProbingTask.objects.filter(languages__code=language.code).first()
+            linspector = LinspectorStaticEmbeddings(language, probing_task, fasttext)
+            embeddings_dim = linspector._get_embedding_dim(fasttext)
+            # All pretrained fastText files should have dim 300
+            self.assertEqual(embeddings_dim, 300)
+
+    @tag('core', 'static')
     def test_embeddings_file(self):
-        self.assertTrue(os.path.isfile(self.embeddings_file))
+        for (lang, fasttext) in self.files:
+            language = Language.objects.get(code=lang)
+            probing_task = ProbingTask.objects.filter(languages__code=language.code).first()
+            linspector = LinspectorStaticEmbeddings(language, probing_task, fasttext)
+            embeddings_file = linspector._get_embeddings_from_model()
+            self.assertTrue(os.path.isfile(embeddings_file))
+            self.assertGreater(os.path.getsize(embeddings_file), 0)
+            embeddings_dim = linspector._get_embedding_dim(embeddings_file)
+            self.assertEqual(embeddings_dim, 300)
+            os.unlink(embeddings_file)
 
-    @tag('core', 'nn', 'static')
-    def test_classifier(self):
-        probing_task = ProbingTask.objects.filter(name='POS').first()
-        language = probing_task.languages.get(code='de')
-        linspector = LinspectorStaticEmbeddings(language, probing_task, self.embeddings_file)
-        metrics = linspector.probe()
-        self.assertGreater(metrics['accuracy'], 0)
+    @tag('slow', 'core', 'nn', 'static')
+    def test_probe_all(self):
+        for (lang, fasttext) in self.files:
+            language = Language.objects.get(code=lang)
+            probing_tasks = ProbingTask.objects.filter(languages__code=language.code)
+            for probing_task in probing_tasks:
+                linspector = LinspectorStaticEmbeddings(language, probing_task, fasttext)
+                metrics = linspector.probe()
+                self.assertGreater(metrics['accuracy'], 0)

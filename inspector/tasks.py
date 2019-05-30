@@ -5,8 +5,6 @@ from celery import current_task, shared_task
 from .models import Language, Model, ProbingTask
 from .nn.linspector import LinspectorArchiveModel, LinspectorStaticEmbeddings
 
-import time
-
 @shared_task
 def probe(language, probing_tasks, model, layer = None):
     # Requires eventlet as a celery execution pool

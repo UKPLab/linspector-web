@@ -6,9 +6,7 @@ from celery.result import AsyncResult
 
 from django.conf import settings
 from django.core.exceptions import SuspiciousOperation
-from django.core.files.storage import FileSystemStorage
 from django.http import JsonResponse
-from django.utils import timezone
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 

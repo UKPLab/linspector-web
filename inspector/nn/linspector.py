@@ -16,7 +16,6 @@ import inspect
 
 import os
 
-from inspector.models import Language, ProbingTask
 from .dataset_readers.contrastive_dataset_reader import ContrastiveDatasetReader
 from .dataset_readers.intrinsic_dataset_reader import IntrinsicDatasetReader
 from .dataset_readers.linspector_dataset_reader import LinspectorDatasetReader
@@ -26,14 +25,9 @@ from .training.linspector_trainer import LinspectorTrainer
 
 from math import floor
 
-import numpy as np
-
-import shutil
-
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 import torch
-import torch.nn as nn
 import torch.optim as optim
 
 class Linspector(ABC):
@@ -87,10 +81,22 @@ class Linspector(ABC):
         Returns:
             Embedding dimension as an int.
         """
+        dim = 0
         with open(embeddings_file, mode='r') as file:
-            split = file.readline().strip().split()
-            vector = split[1:]
-            return len(vector)
+            for line in file:
+                split = line.strip().split()
+                # Find beginning of vector
+                for idx, value in enumerate(split):
+                    # Skip token
+                    if idx > 0:
+                        try:
+                            float(value)
+                            dim = max(dim, len(split[idx:]))
+                            break
+                        except ValueError:
+                            # Disgard potential artefacts
+                            continue
+        return dim
 
     def probe(self):
         """Probes an embeddings file and returns its metrics.
@@ -232,6 +238,7 @@ class LinspectorStaticEmbeddings(Linspector):
         self.embeddings_file = embeddings_file
 
     def _get_embeddings_from_model(self):
+        dim = self._get_embedding_dim(self.embeddings_file)
         with NamedTemporaryFile(mode='w', suffix='.vec', delete=False) as embeddings_file:
             with open(self.embeddings_file) as data:
                 file_size = sum(1 for line in data)
@@ -239,10 +246,11 @@ class LinspectorStaticEmbeddings(Linspector):
                 data.seek(0)
                 for idx, line in enumerate(data):
                     split = line.strip().split()
-                    if len(split) > 1:
+                    # Disgard lines of size other than embeddings dim plus token
+                    if len(split) == dim + 1:
                         # Lowercase tokens
                         token = split[0].lower()
-                        embedding = split[1:]
+                        embedding = split[-dim:]
                         # Discard non alphabetic tokens
                         if token.isalpha():
                             # Write token and embedding to file
