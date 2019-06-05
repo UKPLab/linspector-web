@@ -1,5 +1,5 @@
 from django.db.models import BooleanField, CharField, FileField, ManyToManyField, Model, UUIDField
-from django.db.models.signals import pre_delete
+from django.db.models.signals import post_delete
 from django.dispatch import receiver
 
 import os
@@ -34,7 +34,7 @@ class Model(Model):
     def __str__(self):
         return self.upload.name
 
-@receiver(pre_delete, sender=Model)
+@receiver(post_delete, sender=Model)
 def auto_delete_file_on_delete(sender, instance, **kwargs):
     """Auto delete file when model is deleted."""
     if instance.upload and os.path.isfile(instance.upload.path):
