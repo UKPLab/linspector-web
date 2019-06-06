@@ -1,31 +1,14 @@
-from allennlp.common.params import Params
-from allennlp.data import Vocabulary
-from allennlp.data.iterators import BasicIterator
 from allennlp.models.archival import load_archive
-from allennlp.modules import Embedding
-from allennlp.training.trainer import Trainer
 
 from django.conf import settings
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import tag, TestCase
 
-import json
-
-from .models import Language, Model, ProbingTask
-from .nn.dataset_readers.linspector_dataset_reader import LinspectorDatasetReader
+from .models import Language, ProbingTask
 from .nn.linspector import LinspectorArchiveModel, LinspectorStaticEmbeddings
-from .nn.models.linspector_linear import LinspectorLinear
 
 import os
 
 import random
-
-import subprocess
-
-from tempfile import NamedTemporaryFile, TemporaryDirectory
-
-import torch
-import torch.optim as optim
 
 from urllib.request import urlopen
 
@@ -89,29 +72,31 @@ class LinspectorArchiveModelTests(TestCase):
 
     def setUp(self):
         self.archives = list()
-        models = ['simple_tagger', 'biaffine_parser'] # TODO: 'crf_tagger', 'esim'
+        models = ['biaffine_parser', 'crf_tagger', 'simple_tagger'] # TODO: 'esim'
         # First language in the list should have at least one contrastive and one non contrastive probing task
-        langs = random.shuffle(['ar', 'hy', 'cs', 'fr', 'hu'])
-        dims = random.shuffle([50, 100, 200, 300])
+        langs = ['ar', 'fr', 'hu', 'hy'] # TODO: 'cs'
+        dims = [50, 100, 200, 300]
+        random.shuffle(langs)
+        random.shuffle(dims)
         for idx, model in enumerate(models):
             # Select 2 random language + dimension combinations per model
-            for i in range(idx, idx * 2):
+            for i in range(idx, idx + 2):
                 # Use modulo to start over when the last index is reached
-                lang = langs[i % (len(langs) - 1)]
-                dim = dims[i % (len(dims) - 1)]
+                lang = langs[i % len(langs)]
+                dim = dims[i % len(dims)]
                 self.archives.append((lang, dim, os.path.join(settings.MEDIA_ROOT, '{}.{}.d{}.tar.gz'.format(model, lang, dim))))
 
     @tag('fast')
     def test_archives(self):
         for (_, _, archive) in self.archives:
-            self.assertTrue(os.path.isfile(archive[1]), msg=archive[1])
-            load_archive(archive[1])
+            self.assertTrue(os.path.isfile(archive), msg=archive)
+            load_archive(archive)
 
     @tag('fast', 'core')
     def test_get_layers(self):
-        archive = load_archive(self.archives[0][2])
         language = Language.objects.all().first()
         probing_task = ProbingTask.objects.filter(languages__code=language.code).first()
+        archive = load_archive(self.archives[0][2])
         linspector = LinspectorArchiveModel(language, probing_task, archive.model)
         self.assertGreater(len(linspector.get_layers()), 0)
 
@@ -120,39 +105,41 @@ class LinspectorArchiveModelTests(TestCase):
         for (lang, dim, archive) in self.archives:
             language = Language.objects.get(code=lang)
             probing_task = ProbingTask.objects.filter(languages__code=language.code).first()
+            archive = load_archive(archive)
             linspector = LinspectorArchiveModel(language, probing_task, archive.model)
             embeddings_file = linspector._get_embeddings_from_model()
             self.assertTrue(os.path.isfile(embeddings_file))
             self.assertGreater(os.path.getsize(embeddings_file), 0)
             embeddings_dim = linspector._get_embedding_dim(embeddings_file)
-            self.assertEqual(embeddings_dim, dim)
+            self.assertEqual(embeddings_dim, linspector.model._modules[linspector.get_layers()[0][0]].get_input_dim())
             os.unlink(embeddings_file)
 
     @tag('core', 'nn')
     def test_classifier(self):
-        archive = load_archive(self.archives[0][2])
         language = Language.objects.get(code=self.archives[0][0])
         # Exclude contrastive tasks
         probing_task = ProbingTask.objects.filter(languages__code=language.code, contrastive=False).first()
+        archive = load_archive(self.archives[0][2])
         linspector = LinspectorArchiveModel(language, probing_task, archive.model)
         metrics = linspector.probe()
         self.assertGreater(metrics['accuracy'], 0)
 
     @tag('core', 'nn', 'contrastive')
     def test_contrastive_classifier(self):
-        archive = load_archive(self.archives[0][2])
         language = Language.objects.get(code=self.archives[0][0])
         # Exclude contrastive tasks
         probing_task = ProbingTask.objects.filter(languages__code=language.code, contrastive=True).first()
+        archive = load_archive(self.archives[0][2])
         linspector = LinspectorArchiveModel(language, probing_task, archive.model)
         metrics = linspector.probe()
         self.assertGreater(metrics['accuracy'], 0)
 
     @tag('slow', 'nn', 'consistency')
     def test_accuracy_consistency(self):
-        archive = load_archive(self.archives[0][2])
         language = Language.objects.get(code=self.archives[0][0])
         probing_task = ProbingTask.objects.filter(languages__code=language.code).first()
+        archive = load_archive(self.archives[0][2])
+        linspector = LinspectorArchiveModel(language, probing_task, archive.model)
         accuracy = 0.0
         for i in range(0, 3):
             metrics = linspector.probe()
@@ -169,6 +156,7 @@ class LinspectorArchiveModelTests(TestCase):
         for (lang, dim, archive) in self.archives:
             language = Language.objects.get(code=lang)
             probing_tasks = ProbingTask.objects.filter(languages__code=language.code)
+            archive = load_archive(archive)
             for probing_task in probing_tasks:
                 linspector = LinspectorArchiveModel(language, probing_task, archive.model)
                 metrics = linspector.probe()
