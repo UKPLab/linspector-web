@@ -22,6 +22,7 @@ from .dataset_readers.linspector_dataset_reader import LinspectorDatasetReader
 from .models.contrastive_linear import ContrastiveLinear
 from .models.linspector_linear import LinspectorLinear
 from .training.linspector_trainer import LinspectorTrainer
+from .utils import get_predictor_for_model
 
 from math import floor
 
@@ -196,15 +197,30 @@ class LinspectorArchiveModel(Linspector):
         embedding = torch.zeros((1, 1, module.get_input_dim()))
         def hook(module, input, output):
             # input[0] contains a torch.nn.utils.rnn.PackedSequence which also has a batch_sizes property
-            embedding.copy_(input[0].data)
+            try:
+                embedding.copy_(input[0].data)
+            except RuntimeError:
+                # TODO: Check why some (few) tokens in StackedBidirectionalLstm and LSTM have dim [1, 3, _] instead of [1, 1, _]
+                # Occurs at the same time as ValueError in predict()
+                pass
         handle = module.register_forward_hook(hook)
         vocab_size = len(vocab)
         callback_frequency = floor(vocab_size / 30)
+        predictor = get_predictor_for_model(self.model, field_key)
         with NamedTemporaryFile(mode='w', suffix='.vec', delete=False) as embeddings_file:
             with torch.no_grad():
                 for idx, instance in enumerate(vocab):
                     token = str(instance[field_key][0])
-                    self.model.forward_on_instance(instance)
+                    # Calling predict will trigger the forward hook
+                    # predict is more robust, maintainable, and future proof than calling e.g. predict_instance, forward, or forward_on_instance
+                    # It handles a lot of pre-processing required by some models
+                    # Also predictors should automatically be updated to match changes in models
+                    try:
+                        predictor.predict(token)
+                    except ValueError:
+                        # TODO: Some (few) tokens have a missing value for heads.index(0) in biaffine_dependency_parser _build_hierplane_tree() e.g. French "arc-boutons"
+                        # Occurs at the same time as RuntimeError in the forward hook
+                        pass
                     # Write token and embedding to file
                     embeddings_file.write('{} {}\n'.format(token, ' '.join(map(str, embedding.numpy().tolist()[0][0]))))
                     # Limit to max 30 callbacks to increase performance
@@ -240,7 +256,8 @@ class LinspectorStaticEmbeddings(Linspector):
     def _get_embeddings_from_model(self):
         dim = self._get_embedding_dim(self.embeddings_file)
         with NamedTemporaryFile(mode='w', suffix='.vec', delete=False) as embeddings_file:
-            with open(self.embeddings_file) as data:
+            # Replace malformed data with '?' e.g. for UnicodeDecodeError
+            with open(self.embeddings_file, errors='replace') as data:
                 file_size = sum(1 for line in data)
                 callback_frequency = floor(file_size / 30)
                 data.seek(0)
