@@ -19,6 +19,7 @@ import os
 from .forms import SelectLanguageForm, SelectLayerForm, SelectProbingTaskForm, UploadModelForm
 from .models import Language, Model, ProbingTask
 from .nn.linspector import LinspectorArchiveModel
+from .nn.utils import Classifier
 from .tasks import probe
 from .utils import get_request_params
 
@@ -28,6 +29,7 @@ class IndexView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['classifiers'] = list(map(str, Classifier))
         context['languages'] = Language.objects.order_by('name')
         context['probing_tasks'] = ProbingTask.objects.order_by('name')
         return context

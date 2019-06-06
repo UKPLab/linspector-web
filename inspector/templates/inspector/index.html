@@ -19,6 +19,11 @@
         </div>
         <ul class="list-group list-group-flush text-left">
           <li class="list-group-item">AllenNLP Archive <code>.tar.gz</code></li>
+          <ul class="list-group list-group-flush">
+          {% for classifier in classifiers %}
+            <li class="list-group-item list-group-item-light pl-4">{{ classifier }}</li>
+          {% endfor %}
+          </ul>
           <li class="list-group-item">Static Embeddings <code>.vec</code></li>
         </ul>
       </div>
