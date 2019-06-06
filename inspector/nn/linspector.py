@@ -111,6 +111,9 @@ class Linspector(ABC):
         train, dev, test = self._get_intrinsic_data()
         # Add test data to vocabulary else evaluation will be unstable
         vocab = Vocabulary.from_instances(train + dev + test)
+        for callback in self._callbacks:
+            # Add small progress margin to indicate something is happening
+            callback(0.02)
         embeddings_file = self._get_embeddings_from_model()
         params = Params({'embedding_dim': self._get_embedding_dim(embeddings_file), 'pretrained_file': embeddings_file, 'trainable': False})
         word_embeddings = Embedding.from_params(vocab, params=params)
@@ -132,7 +135,7 @@ class Linspector(ABC):
             def trainer_callback(progress):
                 for callback in self._callbacks:
                     # Fill second half of progress with trainer callback
-                    callback(0.5 + progress / 2)
+                    callback(0.51 + 0.49 * progress)
             trainer.subscribe(trainer_callback)
             trainer.train()
             metrics = evaluate(trainer.model, test, iterator, cuda_device, batch_weight_key='')
@@ -229,7 +232,7 @@ class LinspectorArchiveModel(Linspector):
                     if idx % callback_frequency == 0:
                         for callback in self._callbacks:
                             # Fill first half of progress with embedding callback
-                            callback(0.5 / vocab_size * idx)
+                            callback(0.02 + 0.49 / vocab_size * idx)
         # Do a final callback
         for callback in self._callbacks:
             callback(0.5)
@@ -278,7 +281,7 @@ class LinspectorStaticEmbeddings(Linspector):
                     if idx % callback_frequency == 0:
                         for callback in self._callbacks:
                             # Fill first half of progress with embedding callback
-                            callback(0.5 / file_size * idx)
+                            callback(0.02 + 0.49 / file_size * idx)
         # Do a final callback
         for callback in self._callbacks:
             callback(0.5)
