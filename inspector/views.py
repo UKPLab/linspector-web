@@ -213,12 +213,14 @@ class ShowResultView(TemplateView):
 
     def setup(self, request, *args, **kwargs):
         super().setup(request, *args, **kwargs)
-        if 'id' not in request.GET:
-            raise SuspiciousOperation('`id` parameter is missing.')
-        else:
+        if 'id' in request.GET:
             self._result = TaskResult.objects.get(task_id=request.GET['id'])
-            if self._result.status != 'SUCCESS':
-                raise RuntimeError('Task is not ready.')
+        elif 'id' in kwargs:
+            self._result = TaskResult.objects.get(task_id=str(kwargs['id']))
+        else:
+            raise SuspiciousOperation('`id` parameter is missing.')
+        if self._result.status != 'SUCCESS':
+            raise RuntimeError('Task is not ready.')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -227,5 +229,6 @@ class ShowResultView(TemplateView):
         language = Language.objects.get(pk=args[0])
         context['language'] = language.name
         context['date'] = self._result.date_done
+        context['share'] = self.request.build_absolute_uri('/{}/'.format(self._result.task_id))
         context['debug'] = settings.DEBUG
         return context

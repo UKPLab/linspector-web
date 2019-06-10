@@ -11,5 +11,6 @@ urlpatterns = [
     path('language/probing-task/model/probe/', ProbeView.as_view(), name='probe_view'),
     path('language/probing-task/model/layer/probe/', ProbeView.as_view(), name='probe_view'),
     path('language/probing-task/model/probe/result/', ShowResultView.as_view(), name='show_result'),
-    path('language/probing-task/model/layer/probe/result/', ShowResultView.as_view(), name='show_result')
+    path('language/probing-task/model/layer/probe/result/', ShowResultView.as_view(), name='show_result'),
+    path('<uuid:id>/', ShowResultView.as_view(), name='show_result')
 ]
