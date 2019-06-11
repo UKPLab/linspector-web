@@ -3,6 +3,7 @@ from abc import ABC
 from allennlp.common.params import Params
 from allennlp.data import Vocabulary
 from allennlp.data.iterators import BasicIterator
+from allennlp.models.esim import ESIM
 from allennlp.modules import Embedding
 from allennlp.modules.seq2seq_encoders.pytorch_seq2seq_wrapper import PytorchSeq2SeqWrapper
 from allennlp.modules.seq2vec_encoders.pytorch_seq2vec_wrapper import PytorchSeq2VecWrapper
@@ -174,7 +175,12 @@ class LinspectorArchiveModel(Linspector):
             A list of tuples containing a dict key and the layer display name.
         """
         layers = list()
-        for name, module in self.model.named_children():
+        # Handle edge case where only the first encoding layer should be accessible to the ESIMPredictor
+        if isinstance(self.model, ESIM):
+            named_children = [('_encoder', self.model._encoder)]
+        else:
+            named_children = self.model.named_children()
+        for name, module in named_children:
             if isinstance(module, PytorchSeq2SeqWrapper) or isinstance(module, PytorchSeq2VecWrapper):
                 # Get name from wrapped class e.g. LSTM
                 layers.append((name, module._module.__class__.__name__))

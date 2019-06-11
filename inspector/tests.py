@@ -72,9 +72,9 @@ class LinspectorArchiveModelTests(TestCase):
 
     def setUp(self):
         self.archives = list()
-        models = ['biaffine_parser', 'crf_tagger', 'simple_tagger'] # TODO: 'esim'
+        models = ['biaffine_parser', 'crf_tagger', 'esim', 'simple_tagger']
         # First language in the list should have at least one contrastive and one non contrastive probing task
-        langs = ['ar', 'fr', 'hu', 'hy'] # TODO: 'cs'
+        langs = ['ar', 'fr', 'cs', 'hu', 'hy']
         dims = [50, 100, 200, 300]
         random.shuffle(langs)
         random.shuffle(dims)
