@@ -42,6 +42,6 @@ def probe(language, probing_tasks, model, layer = None):
     # Delete model
     model.delete()
     # Sort keys by accuracy descending
-    map = sorted(metrics, key=lambda i: metrics[i][model.name]['accuracy'], reverse=True)
+    map = sorted(metrics, key=lambda i: metrics[i]['best']['accuracy'], reverse=True)
     # Use key map to create a sorted dict
     return {key: metrics[key] for key in map}
