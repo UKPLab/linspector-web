@@ -8,7 +8,7 @@
       <div class="form-group col-12">
         <div class="custom-file">
           <input type="file" name="{{ form.model.name }}" class="custom-file-input" id="{{ form.model.auto_id }}" accept=".gz,.vec">
-          <label class="custom-file-label" for="{{ form.model.auto_id }}">Choose Model</label>
+          <label class="custom-file-label" for="{{ form.model.auto_id }}">Choose {{ form.model.label }}</label>
           <small class="form-text text-muted"><code>.tar.gz</code> or <code>.vec</code></small>
           <div class="progress mt-3 invisible">
             <div class="progress-bar progress-bar-striped" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
@@ -32,71 +32,15 @@
 {% block javascript %}
 {% load static %}
 <script src="{% static 'inspector/csrf.js' %}"></script>
+<script src="{% static 'inspector/upload.js' %}"></script>
 <script>
-var form = document.getElementsByTagName('form')[0];
-var file = document.getElementById('{{ form.model.auto_id }}');
-var label = document.querySelectorAll('label[for="{{ form.model.auto_id }}"]')[0];
-var button = document.getElementsByTagName('button')[0];
-var progress = document.getElementsByClassName('progress-bar-striped')[0];
-file.onchange = function(e) {
-  label.innerHTML = file.files[0].name;
-}
-form.onsubmit = function(e) {
-  // If files is empty do synchronous submit
-  // Django will handle errors
-  if (file.files.length > 0) {
-    e.preventDefault();
-    button.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-    Uploading`;
-    button.disabled = true;
-    progress.parentElement.classList.replace('invisible', 'visible');
-    var upload = file.files[0];
-    var data = new FormData();
-    data.append('{{ form.model.name }}', upload, upload.name);
-    var request = new XMLHttpRequest();
-    request.open('POST', window.location.href, true);
-    // Set headers for Django
-    request.setRequestHeader('X-CSRFToken', csrftoken);
-    request.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-    request.onloadstart = function(e) {
-      // Clean up previous error messages
-      Array.from(document.getElementsByClassName('alert')).forEach(function(value) {
-        value.parentElement.parentElement.remove();
-      });
-      progress.style.width = '0%';
-      progress.ariaValueNow = 0;
-    }
-    request.upload.onprogress = function(e) {
-      if (e.lengthComputable) {
-        current = (100 / e.total * e.loaded);
-        progress.style.width = current + '%';
-        progress.ariaValueNow = current;
-      }
-    }
-    request.onloadend = function(e) {
-      var response = JSON.parse(this.response);
-      if (this.status == 200) {
-        progress.style.width = '100%';
-        progress.ariaValueNow = 100;
-        button.innerHTML = 'Done';
-        // Redirect to success url
-        window.location = response.url;
-      } else {
-        // Add error messages
-        Object.keys(response).forEach(function(key) {
-          var error = `<div class="row justify-content-sm-center">
-            <div class="col-sm-6 col-md-4">
-              <div class="alert alert-danger" role="alert">${key.charAt(0).toUpperCase()}${key.slice(1)} - ${response[key]}</div>
-            </div>
-          </div>`;
-          document.getElementsByClassName('content')[0].insertAdjacentHTML('afterbegin', error);
-        });
-        button.innerHTML = 'Try Again';
-        button.disabled = false;
-      }
-    }
-    request.send(data);
-  }
-}
+let file = document.getElementById('{{ form.model.auto_id }}');
+let form = document.getElementsByTagName('form')[0];
+let label = document.querySelectorAll('label[for="{{ form.model.auto_id }}"]')[0];
+let button = document.getElementsByTagName('button')[0];
+let progress = document.getElementsByClassName('progress-bar-striped')[0];
+let upload = new Upload();
+upload.addChangeEventTo(file, label);
+upload.addSubmitEventTo(form, file, button, progress, csrftoken);
 </script>
 {% endblock %}
