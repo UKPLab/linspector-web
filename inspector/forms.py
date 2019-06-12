@@ -27,6 +27,10 @@ class UploadModelForm(Form):
             raise ValidationError('File extension is invalid.')
         return data
 
+class UploadEpochForm(Form):
+
+    epoch = FileField(required=False, label='Epochs', label_suffix=' (Optional)', widget=FileInput(attrs={'class': 'custom-file-input', 'multiple': True}))
+
 class SelectLayerForm(Form):
 
     def __init__(self, layer, *args, **kwargs):

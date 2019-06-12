@@ -8,7 +8,7 @@
     </figure>
   </div>
   <div class="row justify-content-md-center mb-4">
-    <div class="col-md-8">
+    <div class="col-md-10">
       <table class="table">
         <caption class="text-center">
           {% load tz %}
@@ -18,16 +18,27 @@
           <tr>
             <th scope="col">Probing Task</th>
             <th class="text-right" scope="col">Accuracy</th>
-            <th class="text-right" scope="col">Loss</th>
+            {% if file_names|length > 1 %}
+              <th colspan="{{ file_names|length|add:"-1" }}">
+            {% endif %}
           </tr>
+          {% if file_names|length > 1 %}
+            <tr>
+              <th></th>
+              {% for file_name in file_names.keys %}
+                <th class="text-right" scope="col">{{ file_name }}</th>
+              {% endfor %}
+            </tr>
+          {% endif %}
         </thead>
         <tbody>
           {% load percentage %}
-          {% for probing_task, metric in metrics.items %}
+          {% for probing_task, file_names in probing_tasks.items %}
           <tr>
             <th scope="row">{{ probing_task }}</th>
-            <td class="text-right">{{ metric.accuracy|percentage }} %</td>
-            <td class="text-right">{{ metric.loss|floatformat:1 }}</td>
+            {% for _, metrics in file_names.items %}
+              <td class="text-right">{{ metrics.accuracy|percentage }} %</td>
+            {% endfor %}
           </tr>
           {% endfor %}
         </tbody>
@@ -73,6 +84,7 @@ Highcharts.setOptions({
 })
 Highcharts.chart('polar', {
   chart: {
+    height: 512,
     polar: true,
     type: 'area'
   },
@@ -94,9 +106,9 @@ Highcharts.chart('polar', {
   },
   xAxis: {
     categories: [
-    {% for probing_task, _ in metrics.items %}
-    '{{ probing_task }}'{% if not forloop.last %}, {% endif %}
-    {% endfor %}
+      {% for probing_task in probing_tasks.keys %}
+        '{{ probing_task }}'{% if not forloop.last %}, {% endif %}
+      {% endfor %}
     ],
     lineColor: '#6c757d',
     labels: {
@@ -113,20 +125,25 @@ Highcharts.chart('polar', {
     minorGridLineColor: '#dee2e6',
     tickAmount: 5
   },
-  legend: {
-    enabled: false
-  },
-  series: [{
-    name: 'Accuracy',
-    data: [
-    {% for _, metric in metrics.items %}
-    {{ metric.accuracy|percentage }}{% if not forloop.last %}, {% endif %}
+  series: [
+    {% for file_name, probing_tasks in file_names.items %}
+      {
+        name: '{{ file_name }}',
+        data: [
+          {% for _, metrics in probing_tasks.items %}
+            {{ metrics.accuracy|percentage }}{% if not forloop.last %}, {% endif %}
+          {% endfor %}
+        ],
+        {% if not forloop.first %}
+        type: 'line',
+        {% endif %}
+        pointPlacement: 'on'
+      }{% if not forloop.last %}, {% endif %}
     {% endfor %}
-    ],
-    pointPlacement: 'on'
-  }],
+  ],
   tooltip: {
     backgroundColor: '#f8f9fa',
+    shared: true,
     style: {
       color: '#212529'
     },

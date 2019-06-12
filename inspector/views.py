@@ -4,6 +4,8 @@ import ast
 
 from celery.result import AsyncResult
 
+from collections import defaultdict
+
 from django.conf import settings
 from django.core.exceptions import SuspiciousOperation
 from django.http import JsonResponse
@@ -16,7 +18,7 @@ import json
 
 import os
 
-from .forms import SelectLanguageForm, SelectLayerForm, SelectProbingTaskForm, UploadModelForm
+from .forms import SelectLanguageForm, SelectLayerForm, SelectProbingTaskForm, UploadEpochForm, UploadModelForm
 from .models import Language, Model, ProbingTask
 from .nn.linspector import LinspectorArchiveModel
 from .nn.utils import Classifier
@@ -73,7 +75,7 @@ class SelectProbingTaskView(FormView):
         context['back'] = '../'
         return context
 
-class UploadModelResponseMixin:
+class UploadResponseMixin:
 
     def form_invalid(self, form):
         response = super().form_invalid(form)
@@ -92,7 +94,7 @@ class UploadModelResponseMixin:
         else:
             return response
 
-class UploadModelView(UploadModelResponseMixin, FormView):
+class UploadModelView(UploadResponseMixin, FormView):
 
     template_name = 'inspector/upload_model.html'
     form_class = UploadModelForm
@@ -109,7 +111,7 @@ class UploadModelView(UploadModelResponseMixin, FormView):
     def get_success_url(self):
         _, extension = os.path.splitext(self._model.upload.name)
         if extension == '.gz':
-            url = 'layer/?lang={}&task={}&model={}'
+            url = 'epoch/?lang={}&task={}&model={}'
         else:
             # Skip layer selection for static embeddings
             url = 'probe/?lang={}&task={}&model={}'
@@ -124,8 +126,56 @@ class UploadModelView(UploadModelResponseMixin, FormView):
         form_class = self.get_form_class()
         form = self.get_form(form_class)
         if form.is_valid():
-            self._model = Model(upload=request.FILES['model'])
+            self._model = Model(name=request.FILES['model'].name[:35], upload=request.FILES['model'])
             self._model.save()
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
+
+class UploadEpochView(UploadResponseMixin, FormView):
+
+    template_name = 'inspector/upload_epoch.html'
+    form_class = UploadEpochForm
+
+    def setup(self, request, *args, **kwargs):
+        super().setup(request, *args, **kwargs)
+        if 'lang' not in request.GET:
+            raise SuspiciousOperation('`lang` parameter is missing.')
+        elif 'task' not in request.GET:
+            raise SuspiciousOperation('`task` parameter is missing.')
+        elif 'model' not in request.GET:
+            raise SuspiciousOperation('`model` parameter is missing.')
+        else:
+            self._language, self._probing_tasks, self._model = get_request_params(request)
+            # Cleanup of previous uploaded epochs
+            # Otherwise the user could upload additional epochs using the back button
+            for epoch in self._model.epoch.all():
+                # Remove before delete so the deletion won't cascade to the model
+                self._model.epoch.remove(epoch)
+                epoch.delete()
+
+    def get_success_url(self):
+        url = 'layer/?lang={}&task={}&model={}'
+        for epoch in self._model.epoch.all():
+            _, extension = os.path.splitext(epoch.upload.name)
+            if extension != '.th':
+                raise SuspiciousOperation('`epoch` parameter is invalid.')
+        # If no epoch was uploaded return url for skip button
+        return url.format(self._language.code, ','.join([str(task.id) for task in self._probing_tasks]), self._model.id)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['back'] = '../?lang={}&task={}'.format(self._language.code, ','.join([str(task.id) for task in self._probing_tasks]))
+        context['skip'] = self.get_success_url()
+        return context
+
+    def post(self, request, *args, **kwargs):
+        form_class = self.get_form_class()
+        form = self.get_form(form_class)
+        files = request.FILES.getlist('epoch')
+        if form.is_valid():
+            for file in files:
+                self._model.epoch.create(name=file.name[:35], upload=file)
             return self.form_valid(form)
         else:
             return self.form_invalid(form)
@@ -159,7 +209,7 @@ class SelectLayerView(FormView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['back'] = '../?lang={}&task={}'.format(self._language.code, ','.join([str(task.id) for task in self._probing_tasks]))
+        context['back'] = '../?lang={}&task={}&model={}'.format(self._language.code, ','.join([str(task.id) for task in self._probing_tasks]), self._model.id)
         return context
 
 class ProbeView(TemplateView):
@@ -224,7 +274,13 @@ class ShowResultView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['metrics'] = json.loads(self._result.result)
+        metrics = json.loads(self._result.result)
+        context['probing_tasks'] = metrics
+        file_names = defaultdict(dict)
+        for probing_task, file in metrics.items():
+            for file_name, metric in file.items():
+                file_names[file_name][probing_task] = metric
+        context['file_names'] = dict(file_names)
         args = ast.literal_eval(self._result.task_args)
         language = Language.objects.get(pk=args[0])
         context['language'] = language.name

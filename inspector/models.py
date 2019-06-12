@@ -26,14 +26,25 @@ class ProbingTask(Model):
     def to_camel_case(self):
         return self.name.replace(' ', '')
 
-class Model(Model):
+class Epoch(Model):
 
-    id = UUIDField(primary_key=True, default=uuid4, editable=False)
+    name = CharField(max_length=35)
     upload = FileField()
 
     def __str__(self):
-        return self.upload.name
+        return self.name
 
+class Model(Model):
+
+    id = UUIDField(primary_key=True, default=uuid4, editable=False)
+    name = CharField(max_length=35)
+    upload = FileField()
+    epoch = ManyToManyField(Epoch)
+
+    def __str__(self):
+        return self.name
+
+@receiver(post_delete, sender=Epoch)
 @receiver(post_delete, sender=Model)
 def auto_delete_file_on_delete(sender, instance, **kwargs):
     """Auto delete file when model is deleted."""
