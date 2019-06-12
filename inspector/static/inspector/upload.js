@@ -54,10 +54,10 @@ class Upload {
                         // Add error messages
                         Object.keys(response).forEach(function (key) {
                             let error = `<div class="row justify-content-sm-center">
-                    <div class="col-sm-6 col-md-4">
-                      <div class="alert alert-danger" role="alert">${key.charAt(0).toUpperCase()}${key.slice(1)} - ${response[key]}</div>
-                    </div>
-                  </div>`;
+                              <div class="col-sm-6 col-md-4">
+                                <div class="alert alert-danger" role="alert">${key.charAt(0).toUpperCase()}${key.slice(1)} - ${response[key]}</div>
+                              </div>
+                            </div>`;
                             document.getElementsByClassName('content')[0].insertAdjacentHTML('afterbegin', error);
                         });
                         button.innerHTML = 'Try Again';
