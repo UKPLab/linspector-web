@@ -5,6 +5,8 @@ from celery.exceptions import Ignore
 
 from collections import defaultdict
 
+from django.conf import settings
+
 from .models import Language, Model, ProbingTask
 from .nn.linspector import LinspectorArchiveModel, LinspectorStaticEmbeddings
 
@@ -52,4 +54,7 @@ def probe(language, probing_tasks, model, layer=None):
         current_task.update_state(state='FAILURE')
         # Cleanup
         model.delete()
-        raise Ignore()
+        if settings.DEBUG:
+            raise
+        else:
+            raise Ignore()
