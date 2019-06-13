@@ -4,6 +4,11 @@ LINSPECTOR (Language Inspector) is a multilingual inspector to analyze word embe
 
 [linspector.ukp.informatik.tu-darmstadt.de](https://linspector.ukp.informatik.tu-darmstadt.de)
 
+## Overview
+
+- `inspector/` is a Django application structured similar to the official documentation.
+- `inspector/nn/` contains an AllenNLP based evaluation suite.
+
 ## Installation
 
 LINSPECTOR is hosted at [linspector.ukp.informatik.tu-darmstadt.de](https://linspector.ukp.informatik.tu-darmstadt.de) but you can also run a local copy.
