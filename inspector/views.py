@@ -155,13 +155,7 @@ class UploadEpochView(UploadResponseMixin, FormView):
                 epoch.delete()
 
     def get_success_url(self):
-        url = 'layer/?lang={}&task={}&model={}'
-        for epoch in self._model.epoch.all():
-            _, extension = os.path.splitext(epoch.upload.name)
-            if extension != '.th':
-                raise SuspiciousOperation('`epoch` parameter is invalid.')
-        # If no epoch was uploaded return url for skip button
-        return url.format(self._language.code, ','.join([str(task.id) for task in self._probing_tasks]), self._model.id)
+        return 'layer/?lang={}&task={}&model={}'.format(self._language.code, ','.join([str(task.id) for task in self._probing_tasks]), self._model.id)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
