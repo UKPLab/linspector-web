@@ -100,6 +100,15 @@ class LinspectorArchiveModelTests(TestCase):
         linspector = LinspectorArchiveModel(language, probing_task, archive.model)
         self.assertGreater(len(linspector.get_layers()), 0)
 
+    @tag('fast', 'core')
+    def test_get_layer(self):
+        language = Language.objects.all().first()
+        probing_task = ProbingTask.objects.filter(languages__code=language.code).first()
+        archive = load_archive(self.archives[0][2])
+        linspector = LinspectorArchiveModel(language, probing_task, archive.model)
+        layers = linspector.get_layers()
+        self.assertIsInstance(linspector._get_layer(layers[0][0]), dict)
+
     @tag('core')
     def test_embeddings_file(self):
         for (lang, dim, archive) in self.archives:
@@ -150,6 +159,24 @@ class LinspectorArchiveModelTests(TestCase):
             else:
                 # Set accuracy to inital value
                 accuracy = metrics['accuracy']
+
+    @tag('slow', 'core', 'nn')
+    def test_probe_all_layers(self):
+        # Probe all layers for every model but skip duplicate model types
+        for idx, (lang, dim, archive) in enumerate(self.archives):
+            if (idx + 1) % 2 == 0:
+                language = Language.objects.get(code=lang)
+                probing_task = ProbingTask.objects.filter(languages__code=language.code).first()
+                archive = load_archive(archive)
+                linspector = LinspectorArchiveModel(language, probing_task, archive.model)
+                results = set()
+                for layer in linspector.get_layers():
+                    linspector.layer = layer[0]
+                    metrics = linspector.probe()
+                    self.assertGreater(metrics['accuracy'], 0)
+                    results.add(metrics['accuracy'])
+                # Expect different results for at least half of the layers
+                self.assertGreaterEqual(len(results), len(linspector.get_layers()) / 2)
 
     @tag('slow', 'core', 'nn', 'contrastive')
     def test_probe_all(self):

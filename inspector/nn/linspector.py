@@ -174,6 +174,9 @@ class LinspectorArchiveModel(Linspector):
         Returns:
             A list of tuples containing a dict key and the layer display name.
         """
+        return [(layer['name'], layer['description']) for layer in self._get_layers()]
+
+    def _get_layers(self):
         layers = list()
         # Handle edge case where only the first encoding layer should be accessible to the ESIMPredictor
         if isinstance(self.model, ESIM):
@@ -181,12 +184,35 @@ class LinspectorArchiveModel(Linspector):
         else:
             named_children = self.model.named_children()
         for name, module in named_children:
+            # Get high level modules
             if isinstance(module, PytorchSeq2SeqWrapper) or isinstance(module, PytorchSeq2VecWrapper):
-                # Get name from wrapped class e.g. LSTM
-                layers.append((name, module._module.__class__.__name__))
-            elif isinstance(module, Seq2SeqEncoder) or isinstance(module, Seq2VecEncoder):
-                layers.append((name, name))
+                # Get a wrapped PyTorch encoder e.g. LSTM
+                module = module._module
+                layers.append({'name': name, 'description': module.__class__.__name__, 'module': module, 'input_dim': module.input_size})
+            elif hasattr(module, 'get_input_dim') and inspect.ismethod(getattr(module, 'get_input_dim')):
+                # Get an AllenNLP module with get_input_dim() e.g. FeedForward
+                layers.append({'name': name, 'description': module.__class__.__name__, 'module': module, 'input_dim': module.get_input_dim()})
+            # Get low level modules
+            for name, module in module.named_children():
+                if hasattr(module, 'input_size'):
+                    # Get an AllenNLP module with input_size e.g. AugmentedLstm
+                    input_dim = module.input_size
+                elif hasattr(module, 'in_features'):
+                    # Get a PyTorch module with in_features e.g. Linear
+                    input_dim = module.in_features
+                else:
+                    continue
+                layers.append({'name': name, 'description': module.__class__.__name__, 'module': module, 'input_dim': input_dim})
+        # Make description more understandable by adding the layer name
+        for layer in layers:
+            layer['description'] += ' ({})'.format(layer['name'].strip('_'))
         return layers
+
+    def _get_layer(self, name):
+        for layer in self._get_layers():
+            if layer['name'] == name:
+                return layer
+        raise KeyError
 
     def _get_embeddings_from_model(self):
         # Get intrinsic data for probing task
@@ -197,13 +223,12 @@ class LinspectorArchiveModel(Linspector):
         vocab = reader.read(base_path)
         # Select module
         if self.layer is not None:
-            module = self.model._modules[self.layer]
+            layer = self._get_layer(self.layer)
         else:
             # If no layer is specified select the first one
-            layers = self.get_layers()
-            module = self.model._modules[layers[0][0]]
+            layer = self.get_layers()[0]
         # Get embeddings for vocab
-        embedding = torch.zeros((1, 1, module.get_input_dim()))
+        embedding = torch.zeros((1, 1, layer['input_dim']))
         def hook(module, input, output):
             # input[0] contains a torch.nn.utils.rnn.PackedSequence which also has a batch_sizes property
             try:
@@ -212,7 +237,7 @@ class LinspectorArchiveModel(Linspector):
                 # TODO: Check why some (few) tokens in StackedBidirectionalLstm and LSTM have dim [1, 3, _] instead of [1, 1, _]
                 # Occurs at the same time as ValueError in predict()
                 pass
-        handle = module.register_forward_hook(hook)
+        handle = layer['module'].register_forward_hook(hook)
         vocab_size = len(vocab)
         callback_frequency = floor(vocab_size / 30)
         predictor = get_predictor_for_model(self.model, field_key)
