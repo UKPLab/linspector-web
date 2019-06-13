@@ -14,7 +14,7 @@ class Upload {
             if (file.files.length > 0) {
                 e.preventDefault();
                 button.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-            Uploading`;
+                Uploading`;
                 button.disabled = true;
                 progress.parentElement.classList.replace('invisible', 'visible');
                 let upload = file.files;
