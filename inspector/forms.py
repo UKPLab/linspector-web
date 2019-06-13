@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.forms import CheckboxSelectMultiple, ChoiceField, FileField, FileInput, Form, ModelChoiceField, ModelMultipleChoiceField, Select
 
@@ -30,6 +31,16 @@ class UploadModelForm(Form):
 class UploadEpochForm(Form):
 
     epoch = FileField(required=False, label='Epochs', label_suffix=' (Optional)', widget=FileInput(attrs={'class': 'custom-file-input', 'multiple': True}))
+
+    def clean_epoch(self):
+        data = self.files.getlist('epoch')
+        if len(data) > settings.MAX_EPOCH_UPLOAD_NUMBER:
+            raise ValidationError('Number of epochs is invalid.')
+        for file in data:
+            _, extension = os.path.splitext(file.name)
+            if extension != '.th':
+                raise ValidationError('File extension is invalid.')
+        return data
 
 class SelectLayerForm(Form):
 

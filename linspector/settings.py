@@ -27,6 +27,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', 'linspector.ukp.informatik.tu-darmstadt.de']
 
+MAX_EPOCH_UPLOAD_NUMBER = 3
+
 
 # Application definition
 
