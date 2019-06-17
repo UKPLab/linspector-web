@@ -6,6 +6,8 @@ from celery.result import AsyncResult
 
 from collections import defaultdict
 
+from copy import deepcopy
+
 from django.conf import settings
 from django.core.exceptions import SuspiciousOperation
 from django.http import JsonResponse
@@ -272,9 +274,18 @@ class ShowResultView(TemplateView):
         context['probing_tasks'] = metrics
         file_names = defaultdict(dict)
         for probing_task, file in metrics.items():
-            for file_name, metric in file.items():
-                file_names[file_name][probing_task] = metric
+            for file_name, metrics in file.items():
+                file_names[file_name][probing_task] = metrics
         context['file_names'] = dict(file_names)
+        # Create a second dict with the difference between each epoch and best metrics
+        if len(file_names) > 1:
+            diff = deepcopy(file_names)
+            del diff['best']
+            for file_name, probing_tasks in diff.items():
+                for probing_task, metrics in probing_tasks.items():
+                    for metric, value in metrics.items():
+                        diff[file_name][probing_task][metric] = value - file_names['best'][probing_task][metric]
+            context['diff'] = dict(diff)
         args = ast.literal_eval(self._result.task_args)
         language = Language.objects.get(pk=args[0])
         context['language'] = language.name

@@ -7,6 +7,13 @@
       <div id="polar"></div>
     </figure>
   </div>
+  {% if diff %}
+    <div class="row justify-content-md-center mb-4">
+      <figure class="figure col-md-8">
+        <div id="column"></div>
+      </figure>
+    </div>
+  {% endif %}
   <div class="row justify-content-md-center mb-4">
     <div class="table-responsive-md col-md-10">
       <table class="table">
@@ -80,15 +87,12 @@ Highcharts.setOptions({
     style: {
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"'
     }
-  }
-})
-Highcharts.chart('polar', {
-  chart: {
-    height: 512,
-    polar: true,
-    type: 'area'
   },
-  colors: ['#b90f22', '#d7ac00', '#00689d', '#7fab16'],
+  credits: {
+    style: {
+      color: '#6c757d'
+    }
+  },
   exporting: {
     buttons: {
       contextButton: {
@@ -96,20 +100,27 @@ Highcharts.chart('polar', {
       }
     }
   },
-  credits: {
-    style: {
-      color: '#6c757d'
+  legend: {
+    itemStyle: {
+      'font-weight': 400
     }
   },
   title: {
-    text: null
+    style: {
+      'font-size': '1rem',
+      'font-weight': 'bold'
+    }
+  },
+  tooltip: {
+    backgroundColor: '#f8f9fa',
+    shared: true,
+    style: {
+      color: '#212529'
+    },
+    valueDecimals: 1,
+    valueSuffix: ' %'
   },
   xAxis: {
-    categories: [
-      {% for probing_task in probing_tasks.keys %}
-        '{{ probing_task }}'{% if not forloop.last %}, {% endif %}
-      {% endfor %}
-    ],
     lineColor: '#6c757d',
     labels: {
       style: {
@@ -119,10 +130,30 @@ Highcharts.chart('polar', {
     tickmarkPlacement: 'on'
   },
   yAxis: {
+    gridLineColor: '#dee2e6',
+    minorGridLineColor: '#dee2e6'
+  },
+})
+Highcharts.chart('polar', {
+  chart: {
+    height: 512,
+    polar: true,
+    type: 'area'
+  },
+  colors: ['#b90f22', '#d7ac00', '#00689d', '#7fab16'],
+  title: {
+    text: 'Probing Task Accuracy'
+  },
+  xAxis: {
+    categories: [
+      {% for probing_task in probing_tasks.keys %}
+        '{{ probing_task }}'{% if not forloop.last %}, {% endif %}
+      {% endfor %}
+    ]
+  },
+  yAxis: {
     min: 0,
     max: 100,
-    gridLineColor: '#dee2e6',
-    minorGridLineColor: '#dee2e6',
     tickAmount: 5
   },
   series: [
@@ -140,17 +171,47 @@ Highcharts.chart('polar', {
         pointPlacement: 'on'
       }{% if not forloop.last %}, {% endif %}
     {% endfor %}
-  ],
-  tooltip: {
-    backgroundColor: '#f8f9fa',
-    shared: true,
-    style: {
-      color: '#212529'
-    },
-    valueDecimals: 1,
-    valueSuffix: ' %'
-  }
+  ]
 });
+{% if diff %}
+  Highcharts.chart('column', {
+    chart: {
+      height: 256,
+      type: 'column'
+    },
+    colors: ['#d7ac00', '#00689d', '#7fab16'],
+    title: {
+      text: 'Difference to Best Weights'
+    },
+    xAxis: {
+      categories: [
+        {% for probing_task in probing_tasks.keys %}
+          '{{ probing_task }}'{% if not forloop.last %}, {% endif %}
+        {% endfor %}
+      ]
+    },
+    yAxis: {
+      tickAmount: 5
+    },
+    series: [
+      {% for file_name, probing_tasks in diff.items %}
+        {
+          name: '{{ file_name }}',
+          data: [
+            {% for _, metrics in probing_tasks.items %}
+              {{ metrics.accuracy|percentage }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+          ]
+        }{% if not forloop.last %}, {% endif %}
+      {% endfor %}
+    ],
+    plotOptions: {
+      series: {
+        minPointLength: 2
+      }
+    }
+  });
+{% endif %}
 var share = document.getElementById('share');
 var button = document.getElementsByClassName('btn-primary')[0];
 if (navigator.share) {
