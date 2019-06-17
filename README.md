@@ -97,3 +97,26 @@ Odd Feature and Shared Feature are contrastive tasks trying to predict a single 
 For training data each line consists of two tokens and a label all separated by whitespace e.g. `ruckelte	getoastet	Tense`.
 
 A boolean flag `contrastive` has to be set in the database for each contrastive task.
+
+## Commands
+
+There is a command-line script `experiment` to probe static embeddings files which is designed to work with the intrinsic evaluation of [Şahin et al. (2019)](https://github.com/UKPLab/linspector).
+
+To probe a single embeddings file per language run:
+
+    # Folders structured like media/experiment/ar/embeddings.vec
+    ./manage.py experiment ar hy cs fr hu
+
+To probe different embedding types run:
+
+    # Folders structured like media/experiment/ar/fasttext/embeddings.vec
+    ./manage.py experiment ar hy cs fr hu --types bpe fasttext w2v
+
+To probe different embedding dimensions run:
+
+    # media/experiment/ar/fasttext/100/embeddings.vec
+    ./manage.py experiment ar hy cs fr hu --types bpe fasttext w2v --dims 50 100 200 300
+
+The metrics will be written to a CSV file for each language e.g. `media/experiment/ar.csv`.
+
+Run `./manage.py help experiment` for additional arguments.
