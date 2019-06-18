@@ -226,7 +226,7 @@ class LinspectorArchiveModel(Linspector):
             layer = self._get_layer(self.layer)
         else:
             # If no layer is specified select the first one
-            layer = self.get_layers()[0]
+            layer = self._get_layers()[0]
         # Get embeddings for vocab
         embedding = torch.zeros((1, 1, layer['input_dim']))
         def hook(module, input, output):
