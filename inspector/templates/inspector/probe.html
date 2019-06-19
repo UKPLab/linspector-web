@@ -4,8 +4,8 @@
 <div class="content my-4 p-2 p-sm-4">
   <div class="row justify-content-md-center">
     <div class="col-md-8 my-4">
-      <div class="progress">
-        <div class="progress-bar progress-bar-striped" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">Pending</div>
+      <div class="progress invisible">
+        <div class="progress-bar progress-bar-striped" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
       </div>
     </div>
   </div>
@@ -19,7 +19,7 @@
   </div>
   <div class="row">
     <div class="col-12 my-4 text-center">
-      <p class="text-muted">Progess can jump at times due to early stopping.</p>
+      <p class="text-muted">Your probing job was enqueued and will start soon.</p>
     </div>
   </div>
 {% endblock %}
@@ -28,6 +28,8 @@
 <script>
 let progress = document.getElementsByClassName('progress-bar-striped')[0];
 let button = document.getElementsByTagName('button')[0];
+let text = document.getElementsByClassName('text-muted')[0];
+var state = 'PENDING';
 function setProgress() {
   fetch(window.location.pathname + '?id={{ task_id }}', {headers: {'X-Requested-With': 'XMLHttpRequest'}}).then(function(response) {
     response.json().then(function(data) {
@@ -48,7 +50,12 @@ function setProgress() {
           progress.style.width = 100 * data.info.progress + '%';
           progress.ariaValueNow = 100 * data.info.progress;
           progress.innerHTML = data.info.task;
-          button.innerHTML = button.innerHTML.replace('Pending', 'Probing');
+          if (state != data.state) {
+            progress.parentElement.classList.replace('invisible', 'visible');
+            button.innerHTML = button.innerHTML.replace('Pending', 'Probing');
+            text.innerHTML = 'Progess can jump at times due to early stopping.';
+            state = data.state
+          }
           // Fall through
         default:
           setTimeout(setProgress, 600);
