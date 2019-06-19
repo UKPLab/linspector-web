@@ -92,7 +92,7 @@ We have attached our fixtures under `inspector/fixtures/`.
 
 ### Contrastive Tasks
 
-Odd Feature and Shared Feature are contrastive tasks trying to predict a single odd or shared feature between two tokens.
+_Odd Morphological Feature_ and _Shared Morphological Feature_ are contrastive tasks trying to predict a single odd or shared morphological feature between two tokens.
 
 For training data each line consists of two tokens and a label all separated by whitespace e.g. `ruckelte	getoastet	Tense`.
 
