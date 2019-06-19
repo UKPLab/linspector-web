@@ -7,8 +7,6 @@ from allennlp.models.esim import ESIM
 from allennlp.modules import Embedding
 from allennlp.modules.seq2seq_encoders.pytorch_seq2seq_wrapper import PytorchSeq2SeqWrapper
 from allennlp.modules.seq2vec_encoders.pytorch_seq2vec_wrapper import PytorchSeq2VecWrapper
-from allennlp.modules.seq2seq_encoders.seq2seq_encoder import Seq2SeqEncoder
-from allennlp.modules.seq2vec_encoders.seq2vec_encoder import Seq2VecEncoder
 from allennlp.training.util import evaluate
 
 from django.conf import settings
@@ -240,7 +238,7 @@ class LinspectorArchiveModel(Linspector):
         handle = layer['module'].register_forward_hook(hook)
         vocab_size = len(vocab)
         callback_frequency = floor(vocab_size / 30)
-        predictor = get_predictor_for_model(self.model, field_key)
+        predictor = get_predictor_for_model(self.model)
         with NamedTemporaryFile(mode='w', suffix='.vec', delete=False) as embeddings_file:
             with torch.no_grad():
                 for idx, instance in enumerate(vocab):

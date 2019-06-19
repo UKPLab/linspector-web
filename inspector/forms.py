@@ -1,3 +1,5 @@
+from allennlp.models.archival import load_archive
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.forms import CheckboxSelectMultiple, ChoiceField, FileField, FileInput, Form, ModelChoiceField, ModelMultipleChoiceField, Select
@@ -5,6 +7,7 @@ from django.forms import CheckboxSelectMultiple, ChoiceField, FileField, FileInp
 import os
 
 from .models import Language, ProbingTask
+from .nn.utils import get_predictor_for_model
 
 class SelectLanguageForm(Form):
 
@@ -26,6 +29,12 @@ class UploadModelForm(Form):
         _, extension = os.path.splitext(data.name)
         if extension not in ['.gz', '.vec']:
             raise ValidationError('File extension is invalid.')
+        elif extension == '.gz':
+            archive = load_archive(data.temporary_file_path())
+            try:
+                get_predictor_for_model(archive.model)
+            except NotImplementedError:
+                raise ValidationError('Model type is not supported.')
         return data
 
 class UploadEpochForm(Form):

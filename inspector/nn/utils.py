@@ -10,6 +10,8 @@ from .predictors.esim_predictor import ESIMPredictor
 
 from enum import Enum, unique
 
+import inspect
+
 @unique
 class Classifier(Enum):
     """Enum containing supported AllenNLP classifiers."""
@@ -21,12 +23,11 @@ class Classifier(Enum):
     def __str__(self):
         return self.value
 
-def get_predictor_for_model(model, field_key):
+def get_predictor_for_model(model):
     """Get a matching predictor for a model.
 
     Args:
         model: An allenlp.models.model.
-        field_key: Set the instance key returned from the dataset reader.
 
     Returns:
         An allennlp.predictors.predictor for the model.
@@ -34,6 +35,8 @@ def get_predictor_for_model(model, field_key):
     Raises:
         NotImplementedError: The model type is not supported.
     """
+    # Set field_key to first argument name of forward method
+    field_key = inspect.getfullargspec(model.forward)[0][1]
     if isinstance(model, BiaffineDependencyParser):
         return BiaffineDependencyParserPredictor(model, UniversalDependenciesDatasetReader())
     elif isinstance(model, CrfTagger) or isinstance(model, SimpleTagger):
