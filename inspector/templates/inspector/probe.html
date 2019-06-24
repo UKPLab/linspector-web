@@ -1,5 +1,7 @@
 {% extends 'inspector/form_base.html' %}
 
+{% block title %}Pending - {{ block.super }}{% endblock %}
+
 {% block content %}
 <div class="content my-4 p-2 p-sm-4">
   <div class="row justify-content-md-center">
@@ -51,6 +53,7 @@ function setProgress() {
           progress.ariaValueNow = 100 * data.info.progress;
           progress.innerHTML = data.info.task;
           if (state != data.state) {
+            document.title = document.title.replace('Pending', 'Probing');
             progress.parentElement.classList.replace('invisible', 'visible');
             button.innerHTML = button.innerHTML.replace('Pending', 'Probing');
             text.innerHTML = 'Progess can jump at times due to early stopping.';
