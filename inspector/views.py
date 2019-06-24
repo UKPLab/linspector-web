@@ -38,6 +38,21 @@ class IndexView(TemplateView):
         context['probing_tasks'] = ProbingTask.objects.order_by('name')
         return context
 
+class AboutView(TemplateView):
+
+    template_name = 'inspector/about.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['case_marking'] = ProbingTask.objects.get(name='Case Marking').languages.all().order_by('name')
+        context['gender'] = ProbingTask.objects.get(name='Gender').languages.all().order_by('name')
+        context['person'] = ProbingTask.objects.get(name='Person').languages.all().order_by('name')
+        context['tense'] = ProbingTask.objects.get(name='Tense').languages.all().order_by('name')
+        context['shared'] = ProbingTask.objects.get(name='Shared Morphological Feature').languages.all().order_by('name')
+        context['odd'] = ProbingTask.objects.get(name='Odd Morphological Feature').languages.all().order_by('name')
+        context['pseudoword'] = ProbingTask.objects.get(name='Pseudoword').languages.all().order_by('name')
+        return context
+
 class SelectLanguageView(FormView):
 
     template_name = 'inspector/select_language.html'
