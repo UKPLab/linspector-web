@@ -1,6 +1,10 @@
+from django.contrib.sitemaps.views import sitemap
 from django.urls import path
 
-from inspector.views import AboutView, IndexView, ProbeView, SelectLanguageView, SelectLayerView, SelectProbingTaskView, ShowResultView, UploadEpochView, UploadModelView
+from .sitemaps import StaticViewSitemap
+from .views import AboutView, IndexView, ProbeView, SelectLanguageView, SelectLayerView, SelectProbingTaskView, ShowResultView, UploadEpochView, UploadModelView
+
+sitemaps = {'static': StaticViewSitemap}
 
 urlpatterns = [
     path('', IndexView.as_view(), name='index'),
@@ -14,5 +18,6 @@ urlpatterns = [
     path('language/probing-task/model/epoch/layer/probe/', ProbeView.as_view(), name='probe_view'),
     path('language/probing-task/model/probe/result/', ShowResultView.as_view(), name='show_result'),
     path('language/probing-task/model/epoch/layer/probe/result/', ShowResultView.as_view(), name='show_result'),
-    path('<uuid:id>/', ShowResultView.as_view(), name='show_result')
+    path('<uuid:id>/', ShowResultView.as_view(), name='show_result'),
+    path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap')
 ]
