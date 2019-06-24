@@ -11,7 +11,7 @@
 <body class="d-flex flex-column h-100">
   <header>
     <nav class="navbar navbar-expand navbar-dark bg-primary">
-      <a class="navbar-brand" href="/">LINSPECTOR <span class="badge badge-light">BETA</span></a>
+      <a class="navbar-brand" href="/">LINSPECTOR</a>
       <ul class="navbar-nav mr-auto">
         <li class="nav-item{% if request.path == '/about/' %} active{% endif %}">
           <a class="nav-link" href="/about/">About</a>
@@ -24,6 +24,7 @@
     {% block content %}{% endblock %}
   </main>
   <footer class="bg-light mt-auto py-3 text-center">
+    <p class="text-muted">Developed @ UKP Lab TU Darmstadt.</p>
     <ul class="list-inline py-0 my-0">
       <li class="list-inline-item"><a href="https://www.informatik.tu-darmstadt.de/ukp/impressum.en.jsp">Legal Note</a></li>
       <li class="list-inline-item"><a href="https://www.tu-darmstadt.de/datenschutzerklaerung.en.jsp">Privacy Policy</a></li>

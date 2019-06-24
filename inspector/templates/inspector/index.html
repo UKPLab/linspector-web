@@ -5,23 +5,24 @@
   <div class="container">
     <h1 class="font-weight-light">LINSPECTOR</h1>
     <p class="lead">Language Inspector</p>
-    <p>LINSPECTOR is a multilingual inspector to analyze word embeddings. {{ probing_tasks.count }} simple classification tasks called probing tasks inspect a diverse set of {{ languages.count }} languages. You gain quick insights into your word embeddings especially outside of the English language.</p>
-    <a class="btn btn-primary" href="/language/">Getting Started</a>
+    <p>LINSPECTOR is a multilingual inspector to analyze word representations of your pre-trained AllenNLP models or static embeddings for {{ languages.count }} languages.</p>
+    <a class="btn btn-primary" href="/language/">Get Started</a>
+    <a class="btn btn-secondary" href="/about/">Learn More</a>
   </div>
 </div>
 <div class="content p-2 p-sm-4">
   <div class="row">
     <div class="col-sm-4 mb-4">
       <div class="card bg-light shadow-sm">
-        <h5 class="card-header text-center">File Types</h5>
         <div class="card-body">
-          <p class="card-text">Some text.</p>
+          <h5 class="card-title">File Types</h5>
+          <p class="card-text">LINSPECTOR supports a number of AllenNLP models and static embeddings files. <a href="/about/#allennlp">Learn more</a>.</p>
         </div>
         <ul class="list-group list-group-flush text-left">
           <li class="list-group-item">AllenNLP Archive <code>.tar.gz</code></li>
           <ul class="list-group list-group-flush">
           {% for classifier in classifiers %}
-            <li class="list-group-item list-group-item-light pl-4">{{ classifier }}</li>
+            <li class="list-group-item pl-4"><code>{{ classifier }}</code></li>
           {% endfor %}
           </ul>
           <li class="list-group-item">Static Embeddings <code>.vec</code></li>
@@ -30,9 +31,9 @@
     </div>
     <div class="col-sm-4 mb-4">
       <div class="card bg-light shadow-sm">
-        <h5 class="card-header text-center">Languages <span class="badge badge-primary">{{ languages.count }}</span></h5>
         <div class="card-body">
-          <p class="card-text">Some text.</p>
+          <h5 class="card-title">Languages <span class="badge badge-primary">{{ languages.count }}</span></h5>
+          <p class="card-text">LINSPECTOR provides probing tasks for a diverse set of languages. Every language has a different set of available tasks.</p>
         </div>
         <ul class="list-group list-group-flush text-left">
         {% for language in languages %}
@@ -45,9 +46,9 @@
     </div>
     <div class="col-sm-4 mb-4">
       <div class="card bg-light shadow-sm">
-        <h5 class="card-header text-center">Probing Tasks <span class="badge badge-primary">{{ probing_tasks.count }}</span></h5>
         <div class="card-body">
-          <p class="card-text">Some text.</p>
+          <h5 class="card-title">Probing Tasks <span class="badge badge-primary">{{ probing_tasks.count }}</span></h5>
+          <p class="card-text">Probing tasks analyze pre-trained embeddings for a single linguistic feature such as case marking, gender, person, or tense. <a href="/about/#probing-tasks">Learn more</a>.</p>
         </div>
         <ul class="list-group list-group-flush text-left">
         {% for probing_task in probing_tasks %}

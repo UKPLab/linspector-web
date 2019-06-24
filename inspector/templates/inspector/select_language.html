@@ -3,15 +3,15 @@
 {% block title %}Select Language - {{ block.super }}{% endblock %}
 
 {% block form %}
-<h5 class="card-header text-center">Select Language</h5>
 <div class="card-body">
+  <h5 class="card-title">Select Language</h5>
+  <p class="card-text">Select the language of your pre-trained embeddings.</p>
   <form method="post">{% csrf_token %}
     <div class="form-row">
       <div class="form-group col-12">
         {{ form.language }}
       </div>
     </div>
-    <p class="card-text">Some text.</p>
     <div class="row align-items-center">
       <div class="col-6 text-left">
         <a class="card-link" href="{{ back }}">Back</a>

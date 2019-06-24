@@ -3,8 +3,9 @@
 {% block title %}Upload Epochs - {{ block.super }}{% endblock %}
 
 {% block form %}
-<h5 class="card-header text-center">Optional: Upload Epochs</h5>
 <div class="card-body">
+  <h5 class="card-title">Optional: Upload Epochs</h5>
+  <p class="card-text">You can upload up to <strong>{{ max_epoch_upload_number }}</strong> additional epochs. LINSPECTOR will probe your best weights and each epoch separately.</p>
   <form method="post" enctype="multipart/form-data">{% csrf_token %}
     <div class="form-row">
       <div class="form-group col-12">
@@ -18,7 +19,6 @@
         </div>
       </div>
     </div>
-    <p class="card-text">Some text.</p>
     <div class="row align-items-center">
       <div class="col-3 text-left">
         <a class="card-link" href="{{ back }}">Back</a>

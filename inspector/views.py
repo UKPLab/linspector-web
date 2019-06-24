@@ -136,6 +136,7 @@ class UploadModelView(UploadResponseMixin, FormView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['classifiers'] = list(map(str, Classifier))
         context['back'] = '../?lang={}'.format(self._language.code)
         return context
 
@@ -176,6 +177,7 @@ class UploadEpochView(UploadResponseMixin, FormView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['max_epoch_upload_number'] = settings.MAX_EPOCH_UPLOAD_NUMBER
         context['back'] = '../?lang={}&task={}'.format(self._language.code, ','.join([str(task.id) for task in self._probing_tasks]))
         context['skip'] = self.get_success_url()
         return context
