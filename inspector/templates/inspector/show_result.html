@@ -208,6 +208,9 @@ Highcharts.chart('polar', {
       {% endfor %}
     ],
     plotOptions: {
+      column: {
+        maxPointWidth: 50
+      },
       series: {
         minPointLength: 2
       }
