@@ -26,7 +26,7 @@
         <thead>
           <tr>
             <th scope="col">Probing Task</th>
-            <th class="text-right" scope="col">Accuracy</th>
+            <th class="text-right" scope="col">Accuracy (Loss)</th>
             {% if file_names|length > 1 %}
               <th colspan="{{ file_names|length|add:"-1" }}">
             {% endif %}
@@ -46,7 +46,7 @@
           <tr>
             <th scope="row">{{ probing_task }}</th>
             {% for _, metrics in file_names.items %}
-              <td class="text-right">{{ metrics.accuracy|percentage }} %</td>
+              <td class="text-right" title="Accuracy: {{ metrics.accuracy|percentage }} % Loss: {{ metrics.loss|floatformat:1 }}">{{ metrics.accuracy|percentage }} % ({{ metrics.loss|floatformat:1 }})</td>
             {% endfor %}
           </tr>
           {% endfor %}
