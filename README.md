@@ -15,7 +15,7 @@ LINSPECTOR is hosted at [linspector.ukp.informatik.tu-darmstadt.de](https://lins
 
 1. Clone this repository.
 
-        git clone https://github.com/maexe/linspector-server.git
+        git clone https://github.com/UKPLab/linspector-web.git
 
 2. Create a virtual environment using __Python 3.6.x__.
 
