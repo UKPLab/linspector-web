@@ -1,8 +1,14 @@
-# LINSPECTOR
+# LINSPECTOR WEB
 
 LINSPECTOR (Language Inspector) is a multilingual inspector to analyze word embeddings in a web based application. Our goal is to provide researchers with an easily accessible tool to gain quick insights into their word embeddings especially outside of the English language. To do this we employ simple classification tasks called probing tasks for a diverse set of languages.
 
 [linspector.ukp.informatik.tu-darmstadt.de](https://linspector.ukp.informatik.tu-darmstadt.de)
+
+**Contact Person:** Gözde Gül Şahin, <sahin@ukp.informatik.tu-darmstadt.de>
+
+<https://www.ukp.tu-darmstadt.de>
+
+<https://www.tu-darmstadt.de>
 
 ## Overview
 
