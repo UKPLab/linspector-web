@@ -26,7 +26,7 @@ LINSPECTOR is hosted at [linspector.ukp.informatik.tu-darmstadt.de](https://lins
 2. Create a virtual environment using __Python 3.6.x__.
 
         pip install virtualenv
-        cd linspector-server/
+        cd linspector-web/
         # As of Python 3.7.3 there is a bug using Eventlet with pathlib
         virtualenv linspectorenv -p python3.6
         source linspectorenv/bin/activate
