@@ -53,6 +53,10 @@ class AboutView(TemplateView):
         context['pseudoword'] = ProbingTask.objects.get(name='Pseudoword').languages.all().order_by('name')
         return context
 
+class PaperView(TemplateView):
+
+    template_name = 'inspector/paper.html'
+
 class SelectLanguageView(FormView):
 
     template_name = 'inspector/select_language.html'
