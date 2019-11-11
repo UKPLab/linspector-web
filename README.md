@@ -8,20 +8,19 @@ LINSPECTOR (Language Inspector) is a multilingual inspector to analyze word embe
 
 Please use the following citation:
 
-    @article{DBLP:journals/corr/abs-1907-11438,
-      author    = {Max Eichler and
-                   G{\"{o}}zde G{\"{u}}l Sahin and
-                   Iryna Gurevych},
-      title     = {{LINSPECTOR} {WEB:} {A} Multilingual Probing Suite for Word Representations},
-      journal   = {CoRR},
-      volume    = {abs/1907.11438},
-      year      = {2019},
-      url       = {http://arxiv.org/abs/1907.11438},
-      archivePrefix = {arXiv},
-      eprint    = {1907.11438},
-      timestamp = {Thu, 01 Aug 2019 08:59:33 +0200},
-      biburl    = {https://dblp.org/rec/bib/journals/corr/abs-1907-11438},
-      bibsource = {dblp computer science bibliography, https://dblp.org}
+    @inproceedings{eichler-etal-2019-linspector,
+        title = "{LINSPECTOR} {WEB}: A Multilingual Probing Suite for Word Representations",
+        author = {Eichler, Max  and
+          {\c{S}}ahin, G{\"o}zde G{\"u}l  and
+          Gurevych, Iryna},
+        booktitle = "Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natural Language Processing (EMNLP-IJCNLP): System Demonstrations",
+        month = nov,
+        year = "2019",
+        address = "Hong Kong, China",
+        publisher = "Association for Computational Linguistics",
+        url = "https://www.aclweb.org/anthology/D19-3022",
+        doi = "10.18653/v1/D19-3022",
+        pages = "127--132"
     }
 
 > **Abstract:** We present LINSPECTOR WEB, an open source multilingual inspector to analyze word representations. Our system provides researchers working in low-resource settings with an easily accessible web based probing tool to gain quick insights into their word embeddings especially outside of the English language. To do this we employ 16 simple linguistic probing tasks such as gender, case marking, and tense for a diverse set of 28 languages. We support probing of static word embeddings along with pretrained AllenNLP models that are commonly used for NLP downstream tasks such as named entity recognition, natural language inference and dependency parsing. The results are visualized in a polar chart and also provided as a table. LINSPECTOR WEB is available as an offline tool or at <https://linspector.ukp.informatik.tu-darmstadt.de>.

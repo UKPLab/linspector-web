@@ -1,15 +1,17 @@
 from django.contrib.sitemaps.views import sitemap
 from django.urls import path
+from django.views.generic.base import RedirectView
 
 from .sitemaps import StaticViewSitemap
-from .views import AboutView, IndexView, PaperView, ProbeView, SelectLanguageView, SelectLayerView, SelectProbingTaskView, ShowResultView, UploadEpochView, UploadModelView
+from .views import AboutView, IndexView, ProbeView, PublicationsView, SelectLanguageView, SelectLayerView, SelectProbingTaskView, ShowResultView, UploadEpochView, UploadModelView
 
 sitemaps = {'static': StaticViewSitemap}
 
 urlpatterns = [
     path('', IndexView.as_view(), name='index'),
     path('about/', AboutView.as_view(), name='about'),
-    path('paper/', PaperView.as_view(), name='paper'),
+    path('paper/', RedirectView.as_view(url='/publications/', permanent=True), name='paper'),
+    path('publications/', PublicationsView.as_view(), name='publications'),
     path('language/', SelectLanguageView.as_view(), name='select_language'),
     path('language/probing-task/', SelectProbingTaskView.as_view(), name='select_probing_task'),
     path('language/probing-task/model/', UploadModelView.as_view(), name='upload_model'),
