@@ -25,7 +25,7 @@
         </caption>
         <thead>
           <tr>
-            <th scope="col">Probing Task</th>
+            <th scope="col">Probing Task ({{type}})</th>
             <th class="text-right" scope="col">Accuracy (Loss)</th>
             {% if file_names|length > 1 %}
               <th colspan="{{ file_names|length|add:"-1" }}">
@@ -67,7 +67,7 @@
           <a class="btn btn-primary" href="#">Copy to Clipboard</a>
         </div>
       </div>
-      <a class="btn btn-secondary" href="/language/">Try Another Model</a>
+      <a class="btn btn-secondary" href="/type/">Try Another Model</a>
     </div>
   </div>
 </div>
@@ -144,7 +144,7 @@ Highcharts.chart('polar', {
   },
   colors: ['#b90f22', '#d7ac00', '#00689d', '#7fab16'],
   title: {
-    text: 'Probing Task Accuracy'
+    text: 'Probing Task ({{type}}) Accuracy '
   },
   xAxis: {
     categories: [

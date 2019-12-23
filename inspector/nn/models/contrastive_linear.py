@@ -13,7 +13,7 @@ class ContrastiveLinear(LinspectorLinear):
     """
 
     def __init__(self, word_embeddings, vocab):
-        super().__init__(word_embeddings, vocab)
+        super().__init__(word_embeddings, vocab, "static")
         # Set input dim times 2 for concatenated embeddings
         self.hidden2tag = nn.Linear(in_features=self.word_embeddings.get_output_dim() * 2, out_features=self.num_classes)
 

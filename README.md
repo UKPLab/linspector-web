@@ -71,7 +71,7 @@ LINSPECTOR is hosted at [linspector.ukp.informatik.tu-darmstadt.de](https://lins
 
 7. Install a Celery supported broker, we use [RabbitMQ](https://www.rabbitmq.com) with Eventlet as an execution pool.
 
-8. Add training data to `media/intrinsic_data/` (see _Intrinsic Data_ below).
+8. Add training data to `media/intrinsic_data/` (static probing tasks) and `media/intrinsic_context_data` (contextual probing tasks) (see _Intrinsic Data_ below).
 
 9. Start the server (activate virtualenv for Celery and Django).
 
@@ -100,7 +100,7 @@ For training data each line consists of a token and a label separated by whitesp
 We are using intrinsic data provided by [Şahin et al. (2019)](https://github.com/UKPLab/linspector) with a modified folder structure:
 
 - Probing tasks are title cased without spaces
-- Use ISO 639-1 codes for languages
+- Use ISO 639-1 codes (or ISO ISO 639-2 codes if there is no ISO 639-1 code) for languages
 - Folder names have to match database entries except for the spaces
 - `media/intrinsic_data/CaseMarking/de/ > train.txt, dev.txt, test.txt`
 
@@ -112,6 +112,7 @@ Additionally we renamed some task to be more descriptive:
 - _Pseudo_ to _Pseudoword_
 - _Same Feat_ to _Shared Morphological Feature_
 - _Character Bin_ to _Word Length_
+- _Part of Speech_ to _POS_
 
 Also we deleted _Character Count_. It was replaced by _Word Length_.
 

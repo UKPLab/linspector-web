@@ -21,7 +21,7 @@ class LinspectorDatasetReader(DatasetReader):
     def _read(self, file_path):
         with open(file_path) as file:
             for line in file:
-                split = line.strip().split('\t')
+                split = line.lower().strip().split('\t')
                 token = Token(split[0])
                 if len(split) > 1:
                     label = split[1]

@@ -9,7 +9,9 @@ from uuid import uuid4
 class Language(Model):
 
     name = CharField(max_length=20, unique=True)
-    code = CharField(max_length=2, unique=True)
+    code = CharField(max_length=3, unique=True)
+    static = BooleanField()
+    context = BooleanField()
 
     def __str__(self):
         return self.name
@@ -18,7 +20,9 @@ class ProbingTask(Model):
 
     name = CharField(max_length=35, unique=True)
     languages = ManyToManyField(Language)
+    languages_context = ManyToManyField(Language, related_name='languages_context')
     contrastive = BooleanField(default=False)
+
 
     def __str__(self):
         return self.name
