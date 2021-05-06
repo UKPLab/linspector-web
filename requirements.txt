@@ -35,7 +35,7 @@ editdistance==0.5.3
 eventlet==0.24.1
 flaky==3.5.3
 Flask==1.0.2
-Flask-Cors==3.0.7
+Flask-Cors==3.0.9
 ftfy==5.5.1
 future==0.17.1
 gevent==1.4.0
