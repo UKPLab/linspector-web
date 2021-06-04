@@ -24,7 +24,7 @@ conllu==0.11
 cryptography==2.6.1
 cycler==0.10.0
 cymem==2.0.2
-Django==2.2.7
+Django==2.2.21
 django-celery-results==1.0.4
 dnspython==1.16.0
 docker==3.7.2
