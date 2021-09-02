@@ -18,9 +18,9 @@ Please use the following citation:
         year = "2019",
         address = "Hong Kong, China",
         publisher = "Association for Computational Linguistics",
-        url = "https://www.aclweb.org/anthology/D19-3022",
+        url = "https://aclanthology.org/D19-3022",
         doi = "10.18653/v1/D19-3022",
-        pages = "127--132"
+        pages = "127--132",
     }
 
 > **Abstract:** We present LINSPECTOR WEB, an open source multilingual inspector to analyze word representations. Our system provides researchers working in low-resource settings with an easily accessible web based probing tool to gain quick insights into their word embeddings especially outside of the English language. To do this we employ 16 simple linguistic probing tasks such as gender, case marking, and tense for a diverse set of 28 languages. We support probing of static word embeddings along with pretrained AllenNLP models that are commonly used for NLP downstream tasks such as named entity recognition, natural language inference and dependency parsing. The results are visualized in a polar chart and also provided as a table. LINSPECTOR WEB is available as an offline tool or at <https://linspector.ukp.informatik.tu-darmstadt.de>.
